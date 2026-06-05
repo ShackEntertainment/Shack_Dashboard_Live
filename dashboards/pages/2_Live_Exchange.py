@@ -1,4 +1,3 @@
-# 2_Live_Exchange.py - LIVE EXCHANGE DASHBOARD (LIVE DATA VERSION)
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -13,19 +12,34 @@ from data_sync import load_live_exchange_data
 
 st.set_page_config(page_title="Live Exchange | Shack", page_icon="🎫", layout="wide")
 
-# --- CUSTOM CSS ---
+# --- CUSTOM CSS FOR UI FIXES ---
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; color: #ffffff; }
-    .kpi-card { border: 1px solid #2d323e; border-radius: 12px; padding: 15px; margin-bottom: 10px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    /* Force Headers to be Bright White and Visible */
+    h1 { color: #ffffff !important; font-weight: 800; text-shadow: 2px 2px 4px #000000; }
+    h2 { color: #ffffff !important; font-weight: 700; }
+    h3 { color: #ffffff !important; font-weight: 600; }
+    p { color: #ffffff !important; }
+    label { color: #ffffff !important; }
+    
+    /* Main Container Styles */
+    .main { background-color: #0e1117; }
+    
+    /* KPI Card Styles */
+    .kpi-card { border: 1px solid #2d323e; border-radius: 12px; padding: 15px; margin-bottom: 10px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
     .kpi-card.green { background: linear-gradient(145deg, #1e261e 0%, #141814 100%); border-bottom: 4px solid #4CAF50; }
     .kpi-card.red { background: linear-gradient(145deg, #261e1e 0%, #181414 100%); border-bottom: 4px solid #F44336; }
     .kpi-card.blue { background: linear-gradient(145deg, #1e2026 0%, #141518 100%); border-bottom: 4px solid #2196F3; }
     .kpi-card.purple { background: linear-gradient(145deg, #261e26 0%, #181418 100%); border-bottom: 4px solid #9C27B0; }
-    .kpi-label { font-size: 0.75em; color: #8b92a8; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; }
-    .kpi-value { font-size: 2em; font-weight: bold; color: #ffffff; margin: 5px 0; }
+    
+    .kpi-label { font-size: 0.75em; color: #a0a8c0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; }
+    .kpi-value { font-size: 2em; font-weight: bold; color: #ffffff; margin: 5px 0; text-shadow: 1px 1px 2px #000; }
     .kpi-delta { font-size: 0.75em; color: #4CAF50; margin-top: 5px; font-weight: 600; }
+    
+    /* Button Styles */
     .stButton>button { background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%); color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 600; }
+    .stButton>button:hover { background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%); }
+    
     footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
@@ -40,37 +54,32 @@ st.markdown("---")
 def get_data():
     return load_live_exchange_data()
 
-with st.spinner("🔄 Loading live data from Google Sheets..."):
+with st.spinner(" Loading live data..."):
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict = get_data()
 
-if events_df is None:
+# Handle case where data loading fails completely
+if events_df is None and bookings_df is None:
     st.error("❌ Failed to load data. Check your Google Sheets connection.")
     st.stop()
 
-# --- CALCULATE METRICS (FIXED DATA TYPES) ---
-total_events = len(events_df)
+# --- CALCULATE METRICS ---
+total_events = len(events_df) if events_df is not None else 0
 total_bookings = len(bookings_df) if bookings_df is not None else 0
 
-# Convert to numeric before summing (fixes string/number mix)
+# Safe numeric conversion
+total_revenue = 0
 if financials_df is not None and 'Amount_In' in financials_df.columns:
-    financials_df['Amount_In'] = pd.to_numeric(financials_df['Amount_In'], errors='coerce').fillna(0)
-    total_revenue = financials_df['Amount_In'].sum()
-else:
-    total_revenue = 0
+    total_revenue = pd.to_numeric(financials_df['Amount_In'], errors='coerce').fillna(0).sum()
 
+total_expenses = 0
 if financials_df is not None and 'Amount_Out' in financials_df.columns:
-    financials_df['Amount_Out'] = pd.to_numeric(financials_df['Amount_Out'], errors='coerce').fillna(0)
-    total_expenses = financials_df['Amount_Out'].sum()
-else:
-    total_expenses = 0
+    total_expenses = pd.to_numeric(financials_df['Amount_Out'], errors='coerce').fillna(0).sum()
 
 net_profit = total_revenue - total_expenses
 
+tickets_sold = 0
 if bookings_df is not None and 'Quantity' in bookings_df.columns:
-    bookings_df['Quantity'] = pd.to_numeric(bookings_df['Quantity'], errors='coerce').fillna(0)
-    tickets_sold = int(bookings_df['Quantity'].sum())
-else:
-    tickets_sold = 0
+    tickets_sold = int(pd.to_numeric(bookings_df['Quantity'], errors='coerce').fillna(0).sum())
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -82,14 +91,13 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### 📊 Filters")
-    if 'Event_Name' in events_df.columns:
+    event_filter = "All"
+    if events_df is not None and 'Event_Name' in events_df.columns:
         event_filter = st.selectbox("Filter by Event", ["All"] + list(events_df['Event_Name'].unique()))
-    else:
-        event_filter = st.selectbox("Filter by Event", ["All"])
     
     st.markdown("---")
     if st.button("🏠 Back to Home", use_container_width=True):
-        st.switch_page("Home.py")
+        st.switch_page("dashboards/Home.py") # Updated path
 
 # --- MAIN DASHBOARD ---
 st.markdown("### 📊 Live Performance Overview")
@@ -109,7 +117,7 @@ with col1:
 with col2:
     st.markdown(f"""
     <div class="kpi-card green">
-        <div style="font-size: 35px; margin-bottom: 8px;">💷</div>
+        <div style="font-size: 35px; margin-bottom: 8px;"></div>
         <div class="kpi-label">TOTAL REVENUE</div>
         <div class="kpi-value">£{total_revenue:,.2f}</div>
         <div class="kpi-delta">All time</div>
@@ -119,7 +127,7 @@ with col2:
 with col3:
     st.markdown(f"""
     <div class="kpi-card purple">
-        <div style="font-size: 35px; margin-bottom: 8px;">📈</div>
+        <div style="font-size: 35px; margin-bottom: 8px;"></div>
         <div class="kpi-label">TICKETS SOLD</div>
         <div class="kpi-value">{tickets_sold}</div>
         <div class="kpi-delta">Total bookings</div>
@@ -148,41 +156,32 @@ with tab_events:
     st.markdown("### 📅 Events Overview")
     if events_df is not None and not events_df.empty:
         display_cols = [col for col in ['Event_Name', 'Event_Date', 'Status', 'Capacity_Total', 'Capacity_Remaining'] if col in events_df.columns]
-        if display_cols:
-            st.dataframe(events_df[display_cols], use_container_width=True)
-        else:
-            st.write("No event data available")
+        st.dataframe(events_df[display_cols], use_container_width=True)
     else:
-        st.write("No event data available")
+        st.info("No event data available")
 
 with tab_bookings:
     st.markdown("### 🎫 Recent Bookings")
     if bookings_df is not None and not bookings_df.empty:
         display_cols = [col for col in ['Booking_ID', 'Event_ID', 'Customer_Name', 'Ticket_Type', 'Quantity', 'Total_Price', 'Payment_Status'] if col in bookings_df.columns]
-        if display_cols:
-            st.dataframe(bookings_df[display_cols], use_container_width=True)
-        else:
-            st.write("No bookings data available")
+        st.dataframe(bookings_df[display_cols], use_container_width=True)
     else:
-        st.write("No bookings yet")
+        st.info("No bookings yet")
 
 with tab_financials:
     st.markdown("### 💰 Revenue Breakdown")
     if financials_df is not None and not financials_df.empty:
         st.dataframe(financials_df, use_container_width=True)
     else:
-        st.write("No financial data available")
+        st.info("No financial data available")
 
 with tab_artists:
     st.markdown("### 🎤 Artist Roster")
     if artists_df is not None and not artists_df.empty:
         display_cols = [col for col in ['Artist_Name', 'Discipline', 'Fee_Type', 'Fee_Amount', 'Payment_Status'] if col in artists_df.columns]
-        if display_cols:
-            st.dataframe(artists_df[display_cols], use_container_width=True)
-        else:
-            st.write("No artist data available")
+        st.dataframe(artists_df[display_cols], use_container_width=True)
     else:
-        st.write("No artist data available")
+        st.info("No artist data available")
 
 st.markdown("---")
 st.caption("🔄 Data auto-refreshes every 5 minutes | Last updated: " + datetime.now().strftime('%H:%M:%S'))
