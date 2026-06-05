@@ -37,7 +37,7 @@ with col1:
 with col2:
     st.metric("💰 Total Revenue", f"£{total_revenue:,.2f}", "+8.5% from last month")
 with col3:
-    st.metric("🎨 Active Artists", f"{active_artists}", "+2 new this week")
+    st.metric(" Active Artists", f"{active_artists}", "+2 new this week")
 with col4:
     st.metric("📊 Avg Sale Value", f"£{avg_sale_value:,.2f}", "↑ High-value trend")
 
@@ -51,7 +51,7 @@ if st.sidebar.button("🔄 Sync Data", use_container_width=True):
     st.success("✅ Data synced successfully!")
     st.rerun()
 
-if st.sidebar.button("📥 Export Sales Data", use_container_width=True):
+if st.sidebar.button(" Export Sales Data", use_container_width=True):
     if artists_df is not None:
         csv = artists_df.to_csv(index=False)
         st.download_button(
@@ -72,43 +72,56 @@ if st.sidebar.button("📷 Scan Barcode", use_container_width=True):
 if st.sidebar.button("🏠 Back to Home", use_container_width=True):
     st.switch_page("dashboards/Home.py")
 
-# Main content
-col1, col2 = st.columns([2, 1])
+# --- MAIN CONTENT AREA ---
 
-with col1:
-    st.subheader("📈 Sales Trend")
-    
-    if artists_df is not None and 'Fee_Amount' in artists_df.columns:
-        # Create sample trend data
-        dates = pd.date_range(start='2026-05-01', end='2026-06-05', freq='D')
-        trend_data = pd.DataFrame({
-            'Date': dates,
-            'Revenue': [total_revenue / len(dates) * (1 + i * 0.01) for i in range(len(dates))]
-        })
-        
-        fig = px.line(trend_data, x='Date', y='Revenue', title='Revenue Over Time')
-        fig.update_layout(xaxis_title='Date', yaxis_title='Revenue (£)', hovermode='x unified')
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No sales data available")
+# 1. Sales Trend (Full Width)
+st.subheader("📈 Sales Trend")
 
-with col2:
-    st.subheader("📋 Recent Sales")
+if artists_df is not None and 'Fee_Amount' in artists_df.columns:
+    # Create sample trend data based on real revenue
+    dates = pd.date_range(start='2026-05-01', end='2026-06-05', freq='D')
+    # Create a smooth curve that ends at the total revenue
+    trend_values = [total_revenue * (0.5 + 0.5 * (i / len(dates))) for i in range(len(dates))]
+    # Add some randomness
+    import numpy as np
+    trend_values = [v + np.random.uniform(-50, 50) for v in trend_values]
     
-    if artists_df is not None:
-        # Display recent sales
-        recent_sales = artists_df.head(10) if len(artists_df) > 10 else artists_df
-        st.dataframe(
-            recent_sales[['Artist_Name', 'Discipline', 'Fee_Amount', 'Payment_Status']].head(10),
-            use_container_width=True,
-            hide_index=True
-        )
-    else:
-        st.info("No recent sales")
+    trend_data = pd.DataFrame({
+        'Date': dates,
+        'Revenue': trend_values
+    })
+    
+    fig = px.line(trend_data, x='Date', y='Revenue', title='Revenue Over Time')
+    fig.update_layout(xaxis_title='Date', yaxis_title='Revenue (£)', hovermode='x unified', height=400)
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info("No sales data available for trend")
 
 st.divider()
 
-# Artists detail table
+# 2. Recent Sales (Full Width Table)
+st.subheader(" Recent Sales")
+
+if artists_df is not None:
+    # Display recent sales (Full width table)
+    recent_sales = artists_df.head(10) if len(artists_df) > 10 else artists_df
+    
+    # Rename columns for better display if needed
+    display_df = recent_sales[['Artist_Name', 'Discipline', 'Fee_Amount', 'Payment_Status']].copy()
+    display_df.columns = ['Artist', 'Discipline', 'Fee', 'Status']
+    
+    st.dataframe(
+        display_df,
+        use_container_width=True,
+        hide_index=True,
+        height=300
+    )
+else:
+    st.info("No recent sales")
+
+st.divider()
+
+# 3. All Artists (Filterable Table)
 st.subheader("🎨 All Artists")
 
 if artists_df is not None:
@@ -139,7 +152,8 @@ if artists_df is not None:
     st.dataframe(
         filtered_df,
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        height=400
     )
     
     # Summary stats
