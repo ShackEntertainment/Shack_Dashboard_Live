@@ -1,0 +1,67 @@
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+
+st.set_page_config(page_title="Live Exchange | Shack Entertainment", layout="wide")
+
+# Sidebar Quick Actions
+with st.sidebar:
+    st.header("⚡ Quick Actions")
+    st.button("📅 Add New Event", disabled=True)
+    st.button("🎟️ View Ticket Sales", disabled=True)
+    st.button("💸 Calculate Payouts", disabled=True)
+    st.divider()
+    st.caption("💡 Tip: Double-click 'Live Exchange Dashboard' shortcut to launch!")
+
+# Title & Tagline
+st.title("🎪 Shack Entertainment – Live Exchange Dashboard")
+st.markdown("*Part of the Shack Entertainment Ecosystem • Talent on the Fringe*")
+st.caption("Event booking, ticketing, performer payouts & streaming integration — powered by real-time data")
+st.divider()
+
+# Switch Module Selector
+st.markdown("### 🔄 Switch Module")
+module_choice = st.selectbox(
+    "Select another Shack Entertainment module:",
+    [
+        "🎪 Artists Unlimited (Go To)",
+        "🎟️ The Live Exchange (Current)",
+        "📰 Shack News Network (Coming Soon)"
+    ],
+    index=1
+)
+
+if module_choice == "🎪 Artists Unlimited (Go To)":
+    st.success("✅ Click below to switch to Artists Unlimited Control Panel")
+    st.link_button("🔗 Go to Artists Unlimited", "http://localhost:8501")
+elif module_choice == "📰 Shack News Network (Coming Soon)":
+    st.info("🚧 Shack News Network Analytics is under development.\n\nExpected launch: October 2026")
+else:
+    st.success("✅ You are currently viewing the Live Exchange Dashboard.")
+
+st.divider()
+
+# Main Content - Placeholder Sections
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("### 📅 Upcoming Events")
+    st.info("No events scheduled yet.\n\nUse ‘Add New Event’ in sidebar to get started.")
+    st.dataframe(pd.DataFrame({"Event": [], "Date": [], "Venue": [], "Tickets Sold": []}), use_container_width=True)
+
+with col2:
+    st.markdown("### 💰 Revenue Overview")
+    st.info("Total Revenue This Month: £0.00\n\nArtist Payouts Pending: £0.00")
+    st.bar_chart({"Jan": [0], "Feb": [0], "Mar": [0]})
+
+st.markdown("### 🎭 Featured Performers")
+st.info("Artists will appear here once linked from Artists Unlimited module.")
+
+st.divider()
+with st.expander("❓ Need Help?"):
+    st.markdown("""
+    - **How do I add an event?** → Use ‘Add New Event’ button in sidebar (coming soon)
+    - **How are payouts calculated?** → Based on ticket sales minus venue fee (configurable per event)
+    - **Can I stream my gig?** → Yes! We integrate with YouTube/Twitch/Zoom (feature in development)
+    - **Who do I contact for support?** → Email bola@shackentertainment.com
+    """)

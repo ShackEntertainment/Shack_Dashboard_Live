@@ -1,0 +1,35 @@
+═══════════════════════════════════════════
+    SHACK ENTERTAINMENT - BOT COMMANDS
+═══════════════════════════════════════════
+
+📊 DATA & REPORTS
+─────────────────────────────────────────
+/sales           → Recent sales summary (last 5 sales)
+/artists         → Top performing artists by revenue
+/royalties       → Monthly royalty calculator (70/30 split)
+/stock [item]    → Check stock for specific item
+                   Example: /stock Sunset Mug
+/lowstock        → Manual check for low stock items
+
+─────────────────────────────────────────
+🔧 SYSTEM COMMANDS
+─────────────────────────────────────────
+/status          → Check if bot is online & healthy
+/debug           → Show raw inventory data
+/start           → Show all commands & welcome message
+
+─────────────────────────────────────────
+📦 AUTOMATED FEATURES
+─────────────────────────────────────────
+📸 Photo Scan    → Send barcode photo to check stock
+                   (Feature in progress - retry tomorrow!)
+
+⏰ Daily Report  → Auto-sent at 9:00 AM every day
+                   (Total sales & revenue summary)
+
+⚠️ Low Stock    → Auto-alerts when stock < 5 units
+                   (Checks every hour automatically)
+
+═══════════════════════════════════════════
+    CURRENT STATUS: ✅ ALL SYSTEMS ACTIVE
+═══════════════════════════════════════════

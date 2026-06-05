@@ -1,0 +1,91 @@
+═══════════════════════════════════════════
+    SHACK ENTERTAINMENT - BOT STARTUP GUIDE
+═══════════════════════════════════════════
+
+🤖 WHAT IS THE SHACK BOT?
+─────────────────────────────────────────
+A Telegram-based assistant that:
+• Sends daily sales reports at 9:00 AM
+• Alerts you when stock is low (<5 units)
+• Answers commands like /sales, /artists, /royalties
+• Scans barcodes from photos (in progress)
+
+─────────────────────────────────────────
+🚀 MANUAL STARTUP (Every Time You Restart PC)
+─────────────────────────────────────────
+
+STEP 1: Open Command Prompt
+   • Press Windows Key
+   • Type: cmd
+   • Press Enter
+
+STEP 2: Navigate to Agents Folder
+   • Type: cd C:\Users\Bola\Documents\Shack_Project\agents
+   • Press Enter
+
+STEP 3: Start the Bot
+   • Type: py shack_main_agent.py
+   • Press Enter
+
+✅ You should see:
+   Loading credentials...
+   Token loaded: True
+   Chat ID: 8794865372
+   ✅ Sales tab: Sales
+   ✅ Inventory tab: InventoryData
+   Google Sheets connected!
+   🎪 Shack Agent running... Press Ctrl+C to stop.
+
+─────────────────────────────────────────
+⏰ AUTO-START ON WINDOWS LOGIN (Recommended)
+─────────────────────────────────────────
+
+To make the bot start automatically when you turn on your PC:
+
+STEP 1: Create a Batch File
+   • Open Notepad
+   • Paste this code:
+
+     @echo off
+     cd C:\Users\Bola\Documents\Shack_Project\agents
+     py shack_main_agent.py
+
+   • Save As → "start_bot.bat"
+     Location: C:\Users\Bola\Documents\Shack_Project\
+     File type: All Files (*.*)
+
+STEP 2: Add to Windows Startup
+   • Press Windows Key + R
+   • Type: shell:startup
+   • Press Enter
+   • Copy "start_bot.bat" into this folder
+
+✅ Now the bot will start automatically every time you log in!
+
+─────────────────────────────────────────
+🔧 TROUBLESHOOTING
+─────────────────────────────────────────
+
+❌ “Token not found” or “Sheets error”?
+   → Check if configs/.env and service_account.json exist.
+
+❌ “Port already in use” or “Conflict”?
+   → You have two bots running. Close all black windows and restart.
+
+❌ Bot stops after a few hours?
+   → Windows may be putting it to sleep. Disable sleep mode for Python processes.
+
+─────────────────────────────────────────
+📱 TEST YOUR CONNECTION
+─────────────────────────────────────────
+
+In Telegram, type:
+/status → Should reply: “System Active”
+/sales → Should show recent sales
+/lowstock → Should check inventory
+
+If no response → Bot is not running. Restart it.
+
+═══════════════════════════════════════════
+    CURRENT STATUS: ✅ READY TO LAUNCH
+═══════════════════════════════════════════
