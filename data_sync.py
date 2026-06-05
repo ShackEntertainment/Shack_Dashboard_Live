@@ -2,14 +2,33 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
+import json
 
-# Try to import Google libraries safely at module level
+# Try to import Google libraries safely
 try:
     import gspread
     from google.oauth2.service_account import Credentials
     GOOGLE_SHEETS_AVAILABLE = True
 except ImportError:
     GOOGLE_SHEETS_AVAILABLE = False
+
+def get_google_credentials():
+    """Get Google Sheets credentials from Streamlit secrets or local file"""
+    
+    # First try Streamlit secrets
+    if hasattr(st, 'secrets') and 'google_sheets' in st.secrets:
+        try:
+            creds_dict = json.loads(st.secrets['google_sheets']['credentials'])
+            return Credentials.from_service_account_info(creds_dict)
+        except Exception as e:
+            st.error(f"Error loading credentials from secrets: {e}")
+            return None
+    
+    # Fallback to local file (for local development)
+    if os.path.exists('shack_credentials.json'):
+        return Credentials.from_service_account_file('shack_credentials.json')
+    
+    return None
 
 def load_live_exchange_data():
     """Load data from Google Sheets or return demo data"""
@@ -19,16 +38,20 @@ def load_live_exchange_data():
         return get_demo_data()
     
     try:
-        # Check if credentials file exists
-        if not os.path.exists('shack_credentials.json'):
-            st.warning("⚠️ Credentials file not found. Running in demo mode.")
+        # Get credentials
+        creds = get_google_credentials()
+        if not creds:
+            st.warning("⚠️ Credentials not found. Running in demo mode.")
             return get_demo_data()
         
         # Authenticate with Google Sheets
-        gc = gspread.service_account(filename='shack_credentials.json')
+        gc = gspread.authorize(creds)
+        
+        # Get spreadsheet name from secrets or use default
+        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
         
         # Open the spreadsheet
-        spreadsheet = gc.open("Shack_Live_Exchange_Master")
+        spreadsheet = gc.open(spreadsheet_name)
         
         # Load all worksheets
         events_sheet = spreadsheet.worksheet("01_Events")
@@ -137,6 +160,14 @@ def update_sheet_data(worksheet, df):
         return False
     
     try:
+        creds = get_google_credentials()
+        if not creds:
+            return False
+        
+        gc = gspread.authorize(creds)
+        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
+        spreadsheet = gc.open(spreadsheet_name)
+        
         # Clear existing data
         worksheet.clear()
         
@@ -156,8 +187,13 @@ def add_booking_to_sheet(booking_data):
         return False
     
     try:
-        gc = gspread.service_account(filename='shack_credentials.json')
-        spreadsheet = gc.open("Shack_Live_Exchange_Master")
+        creds = get_google_credentials()
+        if not creds:
+            return False
+        
+        gc = gspread.authorize(creds)
+        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
+        spreadsheet = gc.open(spreadsheet_name)
         bookings_sheet = spreadsheet.worksheet("02_Bookings")
         
         # Append new row
@@ -185,8 +221,13 @@ def log_operation(action, user, details):
         return False
     
     try:
-        gc = gspread.service_account(filename='shack_credentials.json')
-        spreadsheet = gc.open("Shack_Live_Exchange_Master")
+        creds = get_google_credentials()
+        if not creds:
+            return False
+        
+        gc = gspread.authorize(creds)
+        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
+        spreadsheet = gc.open(spreadsheet_name)
         ops_sheet = spreadsheet.worksheet("05_Operations_Log")
         
         # Append new log entry
