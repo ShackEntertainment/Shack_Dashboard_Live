@@ -1,31 +1,66 @@
-# data_sync.py - With error handling for missing libraries
 import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
 
-# Try to import Google libraries, but don't crash if they're missing
+# Try to import Google libraries safely at module level
 try:
     import gspread
     from google.oauth2.service_account import Credentials
     GOOGLE_SHEETS_AVAILABLE = True
 except ImportError:
     GOOGLE_SHEETS_AVAILABLE = False
-    st.warning("⚠️ Google Sheets libraries not available. Running in demo mode.")
 
 def load_live_exchange_data():
     """Load data from Google Sheets or return demo data"""
     
     if not GOOGLE_SHEETS_AVAILABLE:
-        # Return demo data instead of crashing
+        st.warning("⚠️ Google Sheets libraries not available. Running in demo mode.")
         return get_demo_data()
     
     try:
-        # Your existing Google Sheets code here...
-        # (Keep the rest of your function as-is)
-        ...
+        # Check if credentials file exists
+        if not os.path.exists('shack_credentials.json'):
+            st.warning("⚠️ Credentials file not found. Running in demo mode.")
+            return get_demo_data()
+        
+        # Authenticate with Google Sheets
+        gc = gspread.service_account(filename='shack_credentials.json')
+        
+        # Open the spreadsheet
+        spreadsheet = gc.open("Shack_Live_Exchange_Master")
+        
+        # Load all worksheets
+        events_sheet = spreadsheet.worksheet("01_Events")
+        bookings_sheet = spreadsheet.worksheet("02_Bookings")
+        artists_sheet = spreadsheet.worksheet("03_Artists")
+        financials_sheet = spreadsheet.worksheet("04_Financials")
+        ops_sheet = spreadsheet.worksheet("05_Operations_Log")
+        snapshot_sheet = spreadsheet.worksheet("06_Snapshot")
+        
+        # Convert to DataFrames
+        events_df = pd.DataFrame(events_sheet.get_all_records())
+        bookings_df = pd.DataFrame(bookings_sheet.get_all_records())
+        artists_df = pd.DataFrame(artists_sheet.get_all_records())
+        financials_df = pd.DataFrame(financials_sheet.get_all_records())
+        ops_df = pd.DataFrame(ops_sheet.get_all_records())
+        
+        # Get snapshot data
+        snapshot_data = snapshot_sheet.get_all_values()
+        snapshot_dict = {
+            'quarter': snapshot_data[1][0] if len(snapshot_data) > 1 else 'N/A',
+            'total_revenue': float(snapshot_data[1][1]) if len(snapshot_data) > 1 and snapshot_data[1][1] else 0.0,
+            'total_expenses': float(snapshot_data[1][2]) if len(snapshot_data) > 1 and snapshot_data[1][2] else 0.0,
+            'net_profit': float(snapshot_data[1][3]) if len(snapshot_data) > 1 and snapshot_data[1][3] else 0.0,
+            'events_held': int(snapshot_data[1][4]) if len(snapshot_data) > 1 and snapshot_data[1][4] else 0,
+            'total_attendees': int(snapshot_data[1][5]) if len(snapshot_data) > 1 and snapshot_data[1][5] else 0
+        }
+        
+        return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict
+        
     except Exception as e:
         st.error(f"Error loading Google Sheets: {e}")
+        st.info("Switching to demo data...")
         return get_demo_data()
 
 def get_demo_data():
@@ -93,114 +128,76 @@ def get_demo_data():
     }
     
     return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict
-# data_sync.py - CONNECTS GOOGLE SHEETS TO STREAMLIT (UPDATED)
-import gspread
-from google.oauth2.service_account import Credentials
-import pandas as pd
-import os
 
-# --- CONFIGURATION ---
-# Path to your credentials file
-creds_path = os.path.join(os.path.dirname(__file__), 'shack_credentials.json')
-
-# Define scopes
-SCOPE = [
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive'
-]
-
-# Load credentials
-try:
-    creds = Credentials.from_service_account_file(creds_path, scopes=SCOPE)
-    gc = gspread.authorize(creds)
-    print("✅ Google Sheets connected successfully!")
-except Exception as e:
-    print(f"❌ Authentication error: {e}")
-    print("Make sure shack_credentials.json exists in the same folder")
-    exit()
-
-# YOUR SPREADSHEET ID
-SHEET_ID = '1WBsT69FpseHJKxk4ryDrvyQfvpByc8GUYoEfFaLy0kg'
-
-def load_live_exchange_data():
-    """
-    Loads all data from Shack Live Exchange Master Google Sheet
-    Returns: events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict
-    """
-    print("🔄 Syncing Live Exchange Data from Google Sheets...")
-    try:
-        sh = gc.open_by_key(SHEET_ID)
-        
-        # 1. EVENTS MASTER
-        print("  📅 Loading Events Master...")
-        ws = sh.worksheet('01_Events_Master')
-        events_df = pd.DataFrame(ws.get_all_records())
-        if not events_df.empty:
-            events_df.columns = events_df.columns.str.strip()
-        
-        # 2. TICKET BOOKINGS
-        print("  🎫 Loading Ticket Bookings...")
-        ws = sh.worksheet('02_Ticket_Bookings')
-        bookings_df = pd.DataFrame(ws.get_all_records())
-        if not bookings_df.empty:
-            bookings_df.columns = bookings_df.columns.str.strip().str.replace(' ', '_')
-        
-        # 3. ARTIST TALENT
-        print("  🎤 Loading Artist Talent...")
-        ws = sh.worksheet('03_Artist_Talent')
-        artists_df = pd.DataFrame(ws.get_all_records())
-        if not artists_df.empty:
-            artists_df.columns = artists_df.columns.str.strip()
-        
-        # 4. REVENUE FINANCIALS
-        print("  💰 Loading Revenue Financials...")
-        ws = sh.worksheet('04_Revenue_Financials')
-        financials_df = pd.DataFrame(ws.get_all_records())
-        if not financials_df.empty:
-            financials_df.columns = financials_df.columns.str.strip()
-        
-        # 5. OPERATIONS LOG
-        print("  📋 Loading Operations Log...")
-        ws = sh.worksheet('05_Operations_Log')
-        ops_df = pd.DataFrame(ws.get_all_records())
-        if not ops_df.empty:
-            ops_df.columns = ops_df.columns.str.strip()
-        
-        # 6. QUARTERLY SNAPSHOT (For Dashboard KPIs)
-        print("  📊 Loading Quarterly Snapshot...")
-        ws = sh.worksheet('07_Quarterly_Snapshot')
-        snapshot_data = ws.get_all_values()
-        # Convert to dict for easy access (Metric Name -> Actual Value)
-        snapshot_dict = {}
-        for row in snapshot_data:
-            if len(row) >= 3 and row[0] and row[2]:
-                snapshot_dict[row[0].strip()] = row[2].strip()
-        
-        print("✅ Data Synced Successfully!")
-        print(f"   - Events: {len(events_df)} rows")
-        print(f"   - Bookings: {len(bookings_df)} rows")
-        print(f"   - Artists: {len(artists_df)} rows")
-        print(f"   - Financials: {len(financials_df)} rows")
-        print(f"   - Operations: {len(ops_df)} rows")
-        
-        return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict
-        
-    except Exception as e:
-        print(f"❌ Error syncing data: {e}")
-        import traceback
-        traceback.print_exc()
-        return None, None, None, None, None, None
-
-# Test the connection if run directly
-if __name__ == "__main__":
-    events, bookings, artists, financials, ops, snapshot = load_live_exchange_data()
+def update_sheet_data(worksheet, df):
+    """Update a Google Sheet with DataFrame data"""
     
-    if events is not None:
-        print("\n📊 PREVIEW OF DATA:")
-        print("\n--- EVENTS (First 3 rows) ---")
-        print(events.head(3))
-        print("\n--- BOOKINGS (First 3 rows) ---")
-        print(bookings.head(3))
-        print("\n--- SNAPSHOT KPIs ---")
-        for key, value in list(snapshot.items())[:5]:
-            print(f"{key}: {value}")
+    if not GOOGLE_SHEETS_AVAILABLE:
+        st.warning("Cannot update sheets - libraries not available")
+        return False
+    
+    try:
+        # Clear existing data
+        worksheet.clear()
+        
+        # Update with new data
+        worksheet.update([df.columns.tolist()] + df.values.tolist())
+        
+        return True
+    except Exception as e:
+        st.error(f"Error updating sheet: {e}")
+        return False
+
+def add_booking_to_sheet(booking_data):
+    """Add a new booking to Google Sheets"""
+    
+    if not GOOGLE_SHEETS_AVAILABLE:
+        st.warning("Cannot add booking - libraries not available")
+        return False
+    
+    try:
+        gc = gspread.service_account(filename='shack_credentials.json')
+        spreadsheet = gc.open("Shack_Live_Exchange_Master")
+        bookings_sheet = spreadsheet.worksheet("02_Bookings")
+        
+        # Append new row
+        bookings_sheet.append_row([
+            booking_data.get('Booking_ID', ''),
+            booking_data.get('Event_ID', ''),
+            booking_data.get('Customer_Name', ''),
+            booking_data.get('Ticket_Type', ''),
+            booking_data.get('Quantity', ''),
+            booking_data.get('Unit_Price', ''),
+            booking_data.get('Total_Price', ''),
+            booking_data.get('Booking_Date', ''),
+            booking_data.get('Payment_Status', '')
+        ])
+        
+        return True
+    except Exception as e:
+        st.error(f"Error adding booking: {e}")
+        return False
+
+def log_operation(action, user, details):
+    """Log an operation to the operations sheet"""
+    
+    if not GOOGLE_SHEETS_AVAILABLE:
+        return False
+    
+    try:
+        gc = gspread.service_account(filename='shack_credentials.json')
+        spreadsheet = gc.open("Shack_Live_Exchange_Master")
+        ops_sheet = spreadsheet.worksheet("05_Operations_Log")
+        
+        # Append new log entry
+        ops_sheet.append_row([
+            datetime.now().strftime('%Y-%m-%d'),
+            action,
+            user,
+            details
+        ])
+        
+        return True
+    except Exception as e:
+        st.error(f"Error logging operation: {e}")
+        return False
