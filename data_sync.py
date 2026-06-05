@@ -18,7 +18,8 @@ def get_google_credentials():
     # First try Streamlit secrets
     if hasattr(st, 'secrets') and 'google_sheets' in st.secrets:
         try:
-            creds_dict = json.loads(st.secrets['google_sheets']['credentials'])
+            creds_json = st.secrets['google_sheets']['credentials']
+            creds_dict = json.loads(creds_json)
             return Credentials.from_service_account_info(creds_dict)
         except Exception as e:
             st.error(f"Error loading credentials from secrets: {e}")
@@ -26,65 +27,13 @@ def get_google_credentials():
     
     # Fallback to local file (for local development)
     if os.path.exists('shack_credentials.json'):
-        return Credentials.from_service_account_file('shack_credentials.json')
+        try:
+            return Credentials.from_service_account_file('shack_credentials.json')
+        except Exception as e:
+            st.error(f"Error loading local credentials: {e}")
+            return None
     
     return None
-
-def load_live_exchange_data():
-    """Load data from Google Sheets or return demo data"""
-    
-    if not GOOGLE_SHEETS_AVAILABLE:
-        st.warning("⚠️ Google Sheets libraries not available. Running in demo mode.")
-        return get_demo_data()
-    
-    try:
-        # Get credentials
-        creds = get_google_credentials()
-        if not creds:
-            st.warning("⚠️ Credentials not found. Running in demo mode.")
-            return get_demo_data()
-        
-        # Authenticate with Google Sheets
-        gc = gspread.authorize(creds)
-        
-        # Get spreadsheet name from secrets or use default
-        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
-        
-        # Open the spreadsheet
-        spreadsheet = gc.open(spreadsheet_name)
-        
-        # Load all worksheets
-        events_sheet = spreadsheet.worksheet("01_Events")
-        bookings_sheet = spreadsheet.worksheet("02_Bookings")
-        artists_sheet = spreadsheet.worksheet("03_Artists")
-        financials_sheet = spreadsheet.worksheet("04_Financials")
-        ops_sheet = spreadsheet.worksheet("05_Operations_Log")
-        snapshot_sheet = spreadsheet.worksheet("06_Snapshot")
-        
-        # Convert to DataFrames
-        events_df = pd.DataFrame(events_sheet.get_all_records())
-        bookings_df = pd.DataFrame(bookings_sheet.get_all_records())
-        artists_df = pd.DataFrame(artists_sheet.get_all_records())
-        financials_df = pd.DataFrame(financials_sheet.get_all_records())
-        ops_df = pd.DataFrame(ops_sheet.get_all_records())
-        
-        # Get snapshot data
-        snapshot_data = snapshot_sheet.get_all_values()
-        snapshot_dict = {
-            'quarter': snapshot_data[1][0] if len(snapshot_data) > 1 else 'N/A',
-            'total_revenue': float(snapshot_data[1][1]) if len(snapshot_data) > 1 and snapshot_data[1][1] else 0.0,
-            'total_expenses': float(snapshot_data[1][2]) if len(snapshot_data) > 1 and snapshot_data[1][2] else 0.0,
-            'net_profit': float(snapshot_data[1][3]) if len(snapshot_data) > 1 and snapshot_data[1][3] else 0.0,
-            'events_held': int(snapshot_data[1][4]) if len(snapshot_data) > 1 and snapshot_data[1][4] else 0,
-            'total_attendees': int(snapshot_data[1][5]) if len(snapshot_data) > 1 and snapshot_data[1][5] else 0
-        }
-        
-        return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict
-        
-    except Exception as e:
-        st.error(f"Error loading Google Sheets: {e}")
-        st.info("Switching to demo data...")
-        return get_demo_data()
 
 def get_demo_data():
     """Return sample data when Google Sheets is unavailable"""
@@ -152,17 +101,92 @@ def get_demo_data():
     
     return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict
 
+def load_live_exchange_data():
+    """Load data from Google Sheets or return demo data with error message"""
+    
+    if not GOOGLE_SHEETS_AVAILABLE:
+        demo_data = get_demo_data()
+        return demo_data + ("Google Sheets libraries not installed",)
+    
+    try:
+        # Get credentials
+        creds = get_google_credentials()
+        if not creds:
+            demo_data = get_demo_data()
+            if hasattr(st, 'secrets') and 'google_sheets' in st.secrets:
+                return demo_data + ("Credentials found but invalid. Check JSON format in Secrets.",)
+            else:
+                return demo_data + ("Credentials file not found. Running in demo mode.",)
+        
+        # Authenticate with Google Sheets
+        gc = gspread.authorize(creds)
+        
+        # Get spreadsheet name from secrets or use default
+        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
+        
+        try:
+            # Open the spreadsheet
+            spreadsheet = gc.open(spreadsheet_name)
+        except gspread.exceptions.SpreadsheetNotFound:
+            demo_data = get_demo_data()
+            return demo_data + (f"Spreadsheet '{spreadsheet_name}' not found. Did you share it with the service account?",)
+        except Exception as e:
+            demo_data = get_demo_data()
+            return demo_data + (f"Error opening spreadsheet: {str(e)}",)
+        
+        try:
+            # Load all worksheets
+            events_sheet = spreadsheet.worksheet("01_Events")
+            bookings_sheet = spreadsheet.worksheet("02_Bookings")
+            artists_sheet = spreadsheet.worksheet("03_Artists")
+            financials_sheet = spreadsheet.worksheet("04_Financials")
+            ops_sheet = spreadsheet.worksheet("05_Operations_Log")
+            snapshot_sheet = spreadsheet.worksheet("06_Snapshot")
+            
+            # Convert to DataFrames
+            events_df = pd.DataFrame(events_sheet.get_all_records())
+            bookings_df = pd.DataFrame(bookings_sheet.get_all_records())
+            artists_df = pd.DataFrame(artists_sheet.get_all_records())
+            financials_df = pd.DataFrame(financials_sheet.get_all_records())
+            ops_df = pd.DataFrame(ops_sheet.get_all_records())
+            
+            # Get snapshot data
+            snapshot_data = snapshot_sheet.get_all_values()
+            snapshot_dict = {
+                'quarter': snapshot_data[1][0] if len(snapshot_data) > 1 else 'N/A',
+                'total_revenue': float(snapshot_data[1][1]) if len(snapshot_data) > 1 and snapshot_data[1][1] else 0.0,
+                'total_expenses': float(snapshot_data[1][2]) if len(snapshot_data) > 1 and snapshot_data[1][2] else 0.0,
+                'net_profit': float(snapshot_data[1][3]) if len(snapshot_data) > 1 and snapshot_data[1][3] else 0.0,
+                'events_held': int(snapshot_data[1][4]) if len(snapshot_data) > 1 and snapshot_data[1][4] else 0,
+                'total_attendees': int(snapshot_data[1][5]) if len(snapshot_data) > 1 and snapshot_data[1][5] else 0
+            }
+            
+            return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict, None
+            
+        except gspread.exceptions.WorksheetNotFound as e:
+            demo_data = get_demo_data()
+            return demo_data + (f"Worksheet not found: {str(e)}. Make sure sheets are named correctly.",)
+        except Exception as e:
+            demo_data = get_demo_data()
+            return demo_data + (f"Error reading worksheets: {str(e)}",)
+        
+    except gspread.exceptions.APIError as e:
+        demo_data = get_demo_data()
+        return demo_data + (f"Google API Error: {str(e)}. Check credentials and permissions.",)
+    except Exception as e:
+        demo_data = get_demo_data()
+        return demo_data + (f"Unexpected error: {str(e)}",)
+
 def update_sheet_data(worksheet, df):
     """Update a Google Sheet with DataFrame data"""
     
     if not GOOGLE_SHEETS_AVAILABLE:
-        st.warning("Cannot update sheets - libraries not available")
-        return False
+        return False, "Google Sheets libraries not available"
     
     try:
         creds = get_google_credentials()
         if not creds:
-            return False
+            return False, "Credentials not found"
         
         gc = gspread.authorize(creds)
         spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
@@ -174,22 +198,20 @@ def update_sheet_data(worksheet, df):
         # Update with new data
         worksheet.update([df.columns.tolist()] + df.values.tolist())
         
-        return True
+        return True, "Success"
     except Exception as e:
-        st.error(f"Error updating sheet: {e}")
-        return False
+        return False, f"Error updating sheet: {str(e)}"
 
 def add_booking_to_sheet(booking_data):
     """Add a new booking to Google Sheets"""
     
     if not GOOGLE_SHEETS_AVAILABLE:
-        st.warning("Cannot add booking - libraries not available")
-        return False
+        return False, "Google Sheets libraries not available"
     
     try:
         creds = get_google_credentials()
         if not creds:
-            return False
+            return False, "Credentials not found"
         
         gc = gspread.authorize(creds)
         spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
@@ -209,21 +231,20 @@ def add_booking_to_sheet(booking_data):
             booking_data.get('Payment_Status', '')
         ])
         
-        return True
+        return True, "Booking added successfully"
     except Exception as e:
-        st.error(f"Error adding booking: {e}")
-        return False
+        return False, f"Error adding booking: {str(e)}"
 
 def log_operation(action, user, details):
     """Log an operation to the operations sheet"""
     
     if not GOOGLE_SHEETS_AVAILABLE:
-        return False
+        return False, "Google Sheets libraries not available"
     
     try:
         creds = get_google_credentials()
         if not creds:
-            return False
+            return False, "Credentials not found"
         
         gc = gspread.authorize(creds)
         spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
@@ -238,7 +259,6 @@ def log_operation(action, user, details):
             details
         ])
         
-        return True
+        return True, "Operation logged"
     except Exception as e:
-        st.error(f"Error logging operation: {e}")
-        return False
+        return False, f"Error logging operation: {str(e)}"
