@@ -3,3 +3,4 @@ configs/token.json
 configs/.env 
 agents/executive_cache.db 
 "shack_credentials.json" 
+"shack_credentials.json" 
