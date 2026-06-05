@@ -1,3 +1,98 @@
+# data_sync.py - With error handling for missing libraries
+import streamlit as st
+import pandas as pd
+import os
+from datetime import datetime
+
+# Try to import Google libraries, but don't crash if they're missing
+try:
+    import gspread
+    from google.oauth2.service_account import Credentials
+    GOOGLE_SHEETS_AVAILABLE = True
+except ImportError:
+    GOOGLE_SHEETS_AVAILABLE = False
+    st.warning("⚠️ Google Sheets libraries not available. Running in demo mode.")
+
+def load_live_exchange_data():
+    """Load data from Google Sheets or return demo data"""
+    
+    if not GOOGLE_SHEETS_AVAILABLE:
+        # Return demo data instead of crashing
+        return get_demo_data()
+    
+    try:
+        # Your existing Google Sheets code here...
+        # (Keep the rest of your function as-is)
+        ...
+    except Exception as e:
+        st.error(f"Error loading Google Sheets: {e}")
+        return get_demo_data()
+
+def get_demo_data():
+    """Return sample data when Google Sheets is unavailable"""
+    
+    # Events demo data
+    events_df = pd.DataFrame({
+        'Event_Name': ['Summer Rooftop Jam', 'Underground Bass Night', 'Jazz & Canvas Gala', 'Neon Folk Session'],
+        'Event_Date': ['2026-06-15', '2026-06-22', '2026-07-05', '2026-07-12'],
+        'Status': ['On Sale', 'Planning', 'On Sale', 'Planning'],
+        'Capacity_Total': [150, 80, 200, 40],
+        'Capacity_Remaining': [150, 80, 200, 40],
+        'Tickets_Sold': [0, 0, 0, 0]
+    })
+    
+    # Bookings demo data
+    bookings_df = pd.DataFrame({
+        'Booking_ID': ['BK001', 'BK002', 'BK003', 'BK004', 'BK005', 'BK006'],
+        'Event_ID': [1, 1, 2, 3, 3, 4],
+        'Customer_Name': ['Alice Johnson', 'Bob Smith', 'Carol White', 'David Brown', 'Emma Davis', 'Frank Wilson'],
+        'Ticket_Type': ['General Admission', 'VIP', 'General Admission', 'General Admission', 'VIP', 'General Admission'],
+        'Quantity': [2, 1, 4, 1, 2, 3],
+        'Unit_Price': [25.00, 75.00, 20.00, 30.00, 75.00, 25.00],
+        'Total_Price': [50.00, 75.00, 80.00, 30.00, 150.00, 75.00],
+        'Booking_Date': ['2026-05-01', '2026-05-03', '2026-05-05', '2026-05-07', '2026-05-10', '2026-05-12'],
+        'Payment_Status': ['Paid', 'Paid', 'Pending', 'Paid', 'Paid', 'Pending']
+    })
+    
+    # Artists demo data
+    artists_df = pd.DataFrame({
+        'Artist_Name': ['DJ Kemet', 'Maya Strings', 'Bass Collective', 'Jazz Fusion Trio', 'Folk Revival', 'Electronic Soul'],
+        'Discipline': ['DJ/Producer', 'Visual Artist', 'DJ/Producer', 'Music', 'Music', 'Music'],
+        'Fee_Type': ['Fixed', 'Commission', 'Fixed', 'Fixed', 'Fixed', 'Fixed'],
+        'Fee_Amount': [500.00, 0.00, 300.00, 800.00, 400.00, 350.00],
+        'Payment_Status': ['Paid', 'N/A', 'Pending', 'Deposit Paid', 'Pending', 'Pending']
+    })
+    
+    # Financials demo data
+    financials_df = pd.DataFrame({
+        'Transaction_ID': ['TXN001', 'TXN002', 'TXN003', 'TXN004', 'TXN005'],
+        'Date': ['2026-05-01', '2026-05-05', '2026-05-10', '2026-05-15', '2026-05-20'],
+        'Description': ['Ticket Sales - Rooftop Jam', 'Venue Deposit', 'Artist Fee - DJ Kemet', 'Marketing', 'Equipment Rental'],
+        'Category': ['Revenue', 'Expense', 'Expense', 'Expense', 'Expense'],
+        'Amount_In': [450.00, 0.00, 0.00, 0.00, 0.00],
+        'Amount_Out': [0.00, 200.00, 500.00, 150.00, 300.00],
+        'Event_Link': ['Summer Rooftop Jam', 'Summer Rooftop Jam', 'Summer Rooftop Jam', 'General', 'General']
+    })
+    
+    # Operations demo data
+    ops_df = pd.DataFrame({
+        'Date': ['2026-05-01', '2026-05-05', '2026-05-10'],
+        'Action': ['Event Created', 'Venue Booked', 'Artist Confirmed'],
+        'User': ['Admin', 'Admin', 'Admin'],
+        'Details': ['Summer Rooftop Jam created', 'Rooftop venue secured', 'DJ Kemet confirmed']
+    })
+    
+    # Snapshot demo data
+    snapshot_dict = {
+        'quarter': 'Q2 2026',
+        'total_revenue': 2450.00,
+        'total_expenses': 1800.00,
+        'net_profit': 650.00,
+        'events_held': 2,
+        'total_attendees': 145
+    }
+    
+    return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict
 # data_sync.py - CONNECTS GOOGLE SHEETS TO STREAMLIT (UPDATED)
 import gspread
 from google.oauth2.service_account import Credentials
