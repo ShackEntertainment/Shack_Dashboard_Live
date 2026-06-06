@@ -1,3 +1,17 @@
+import streamlit as st
+import pandas as pd
+import os
+from datetime import datetime
+import json
+
+# Try to import Google libraries safely
+try:
+    import gspread
+    from google.oauth2.service_account import Credentials
+    GOOGLE_SHEETS_AVAILABLE = True
+except ImportError:
+    GOOGLE_SHEETS_AVAILABLE = False
+
 def get_google_credentials():
     """Get Google Sheets credentials from Streamlit secrets or local file"""
     
@@ -5,38 +19,29 @@ def get_google_credentials():
         try:
             # Try [google_sheets] format
             if 'google_sheets' in st.secrets:
-                st.write("✅ Found [google_sheets] in secrets")  # Debug
                 secrets = st.secrets['google_sheets']
                 
                 # Check if it's a JSON blob format
                 if 'credentials' in secrets:
-                    st.write("✅ Found 'credentials' key - parsing JSON blob")  # Debug
                     import json
                     creds_json = secrets['credentials']
-                    st.write(f"Credentials type: {type(creds_json)}")  # Debug
-                    
                     if isinstance(creds_json, str):
                         try:
                             creds_dict = json.loads(creds_json)
-                            st.write("✅ JSON parsed successfully")  # Debug
                         except json.JSONDecodeError as je:
-                            st.error(f"❌ JSON parse error: {je}")
+                            st.error(f"JSON parse error: {je}")
                             return None
                     else:
                         creds_dict = creds_json
                     
-                    # Try to create credentials
                     try:
                         creds = Credentials.from_service_account_info(creds_dict)
-                        st.write("✅ Credentials created successfully!")  # Debug
                         return creds
                     except Exception as ce:
-                        st.error(f"❌ Error creating credentials: {ce}")
-                        st.error(f"Private key starts with: {creds_dict.get('private_key', '')[:50]}...")
+                        st.error(f"Error creating credentials: {ce}")
                         return None
                         
                 else:
-                    st.write("Using flat format")  # Debug
                     # Flat format
                     private_key = secrets.get('private_key', '')
                     if '\\n' in private_key:
@@ -60,12 +65,11 @@ def get_google_credentials():
                         creds = Credentials.from_service_account_info(creds_dict)
                         return creds
                     except Exception as ce:
-                        st.error(f"❌ Error in flat format: {ce}")
+                        st.error(f"Error in flat format: {ce}")
                         return None
             
             # Try [connections.gsheets] format
             elif 'connections' in st.secrets and 'gsheets' in st.secrets['connections']:
-                st.write("Found [connections.gsheets] format")
                 secrets = st.secrets['connections']['gsheets']
                 private_key = secrets.get('private_key', '')
                 if '\\n' in private_key:
@@ -87,14 +91,10 @@ def get_google_credentials():
                 
                 return Credentials.from_service_account_info(creds_dict)
             else:
-                st.write("❌ No credentials found in secrets")
-                st.write(f"Available secrets keys: {list(st.secrets.keys())}")
                 return None
                 
         except Exception as e:
-            st.error(f"❌ Unexpected error in get_google_credentials: {type(e).__name__}: {e}")
-            import traceback
-            st.error(traceback.format_exc())
+            st.error(f"Unexpected error in get_google_credentials: {type(e).__name__}: {e}")
             return None
     
     # Fallback to local file
@@ -106,3 +106,145 @@ def get_google_credentials():
             return None
     
     return None
+
+def get_demo_data():
+    """Return sample data when Google Sheets is unavailable"""
+    
+    events_df = pd.DataFrame({
+        'Event_Name': ['Summer Rooftop Jam', 'Underground Bass Night', 'Jazz & Canvas Gala', 'Neon Folk Session'],
+        'Event_Date': ['2026-06-15', '2026-06-22', '2026-07-05', '2026-07-12'],
+        'Status': ['On Sale', 'Planning', 'On Sale', 'Planning'],
+        'Capacity_Total': [150, 80, 200, 40],
+        'Capacity_Remaining': [150, 80, 200, 40],
+        'Tickets_Sold': [0, 0, 0, 0]
+    })
+    
+    bookings_df = pd.DataFrame({
+        'Booking_ID': ['BK001', 'BK002', 'BK003', 'BK004', 'BK005', 'BK006'],
+        'Event_ID': [1, 1, 2, 3, 3, 4],
+        'Customer_Name': ['Alice Johnson', 'Bob Smith', 'Carol White', 'David Brown', 'Emma Davis', 'Frank Wilson'],
+        'Ticket_Type': ['General Admission', 'VIP', 'General Admission', 'General Admission', 'VIP', 'General Admission'],
+        'Quantity': [2, 1, 4, 1, 2, 3],
+        'Unit_Price': [25.00, 75.00, 20.00, 30.00, 75.00, 25.00],
+        'Total_Price': [50.00, 75.00, 80.00, 30.00, 150.00, 75.00],
+        'Booking_Date': ['2026-05-01', '2026-05-03', '2026-05-05', '2026-05-07', '2026-05-10', '2026-05-12'],
+        'Payment_Status': ['Paid', 'Paid', 'Pending', 'Paid', 'Paid', 'Pending']
+    })
+    
+    artists_df = pd.DataFrame({
+        'Artist_Name': ['DJ Kemet', 'Maya Strings', 'Bass Collective', 'Jazz Fusion Trio', 'Folk Revival', 'Electronic Soul'],
+        'Discipline': ['DJ/Producer', 'Visual Artist', 'DJ/Producer', 'Music', 'Music', 'Music'],
+        'Fee_Type': ['Fixed', 'Commission', 'Fixed', 'Fixed', 'Fixed', 'Fixed'],
+        'Fee_Amount': [500.00, 0.00, 300.00, 800.00, 400.00, 350.00],
+        'Payment_Status': ['Paid', 'N/A', 'Pending', 'Deposit Paid', 'Pending', 'Pending']
+    })
+    
+    financials_df = pd.DataFrame({
+        'Transaction_ID': ['TXN001', 'TXN002', 'TXN003', 'TXN004', 'TXN005'],
+        'Date': ['2026-05-01', '2026-05-05', '2026-05-10', '2026-05-15', '2026-05-20'],
+        'Description': ['Ticket Sales - Rooftop Jam', 'Venue Deposit', 'Artist Fee - DJ Kemet', 'Marketing', 'Equipment Rental'],
+        'Category': ['Revenue', 'Expense', 'Expense', 'Expense', 'Expense'],
+        'Amount_In': [450.00, 0.00, 0.00, 0.00, 0.00],
+        'Amount_Out': [0.00, 200.00, 500.00, 150.00, 300.00],
+        'Event_Link': ['Summer Rooftop Jam', 'Summer Rooftop Jam', 'Summer Rooftop Jam', 'General', 'General']
+    })
+    
+    ops_df = pd.DataFrame({
+        'Date': ['2026-05-01', '2026-05-05', '2026-05-10'],
+        'Action': ['Event Created', 'Venue Booked', 'Artist Confirmed'],
+        'User': ['Admin', 'Admin', 'Admin'],
+        'Details': ['Summer Rooftop Jam created', 'Rooftop venue secured', 'DJ Kemet confirmed']
+    })
+    
+    snapshot_dict = {
+        'quarter': 'Q2 2026',
+        'total_revenue': 2450.00,
+        'total_expenses': 1800.00,
+        'net_profit': 650.00,
+        'events_held': 2,
+        'total_attendees': 145
+    }
+    
+    return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict
+
+def load_live_exchange_data():
+    """Load data from Google Sheets or return empty data with error message"""
+    
+    if not GOOGLE_SHEETS_AVAILABLE:
+        demo_data = get_demo_data()
+        return demo_data + ("Google Sheets libraries not installed",)
+    
+    try:
+        creds = get_google_credentials()
+        if not creds:
+            # Return empty dataframes instead of demo data
+            if hasattr(st, 'secrets'):
+                return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+                       pd.DataFrame(), pd.DataFrame(), {}, 
+                       "Credentials found but invalid. Check Secrets format.")
+            else:
+                return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+                       pd.DataFrame(), pd.DataFrame(), {}, 
+                       "Credentials file not found.")
+        
+        gc = gspread.authorize(creds)
+        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
+        
+        try:
+            spreadsheet = gc.open(spreadsheet_name)
+        except gspread.exceptions.SpreadsheetNotFound:
+            return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+                   pd.DataFrame(), pd.DataFrame(), {}, 
+                   f"Spreadsheet '{spreadsheet_name}' not found. Did you share it with the service account?")
+        except gspread.exceptions.APIError as api_err:
+            return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+                   pd.DataFrame(), pd.DataFrame(), {}, 
+                   f"API Error: {str(api_err)}. Check if spreadsheet is shared with service account.")
+        except Exception as e:
+            return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+                   pd.DataFrame(), pd.DataFrame(), {}, 
+                   f"Error opening spreadsheet: {str(e)}")
+        
+        try:
+            events_sheet = spreadsheet.worksheet("01_Events")
+            bookings_sheet = spreadsheet.worksheet("02_Bookings")
+            artists_sheet = spreadsheet.worksheet("03_Artists")
+            financials_sheet = spreadsheet.worksheet("04_Financials")
+            ops_sheet = spreadsheet.worksheet("05_Operations_Log")
+            snapshot_sheet = spreadsheet.worksheet("06_Snapshot")
+            
+            events_df = pd.DataFrame(events_sheet.get_all_records())
+            bookings_df = pd.DataFrame(bookings_sheet.get_all_records())
+            artists_df = pd.DataFrame(artists_sheet.get_all_records())
+            financials_df = pd.DataFrame(financials_sheet.get_all_records())
+            ops_df = pd.DataFrame(ops_sheet.get_all_records())
+            
+            snapshot_data = snapshot_sheet.get_all_values()
+            snapshot_dict = {
+                'quarter': snapshot_data[1][0] if len(snapshot_data) > 1 else 'N/A',
+                'total_revenue': float(snapshot_data[1][1]) if len(snapshot_data) > 1 and snapshot_data[1][1] else 0.0,
+                'total_expenses': float(snapshot_data[1][2]) if len(snapshot_data) > 1 and snapshot_data[1][2] else 0.0,
+                'net_profit': float(snapshot_data[1][3]) if len(snapshot_data) > 1 and snapshot_data[1][3] else 0.0,
+                'events_held': int(snapshot_data[1][4]) if len(snapshot_data) > 1 and snapshot_data[1][4] else 0,
+                'total_attendees': int(snapshot_data[1][5]) if len(snapshot_data) > 1 and snapshot_data[1][5] else 0
+            }
+            
+            return events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict, None
+            
+        except gspread.exceptions.WorksheetNotFound as e:
+            return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+                   pd.DataFrame(), pd.DataFrame(), {}, 
+                   f"Worksheet not found: {str(e)}. Make sure sheets are named correctly.")
+        except Exception as e:
+            return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+                   pd.DataFrame(), pd.DataFrame(), {}, 
+                   f"Error reading worksheets: {str(e)}")
+        
+    except gspread.exceptions.APIError as e:
+        return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+               pd.DataFrame(), pd.DataFrame(), {}, 
+               f"Google API Error: {str(e)}. Check credentials and permissions.")
+    except Exception as e:
+        return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
+               pd.DataFrame(), pd.DataFrame(), {}, 
+               f"Unexpected error: {str(e)}")

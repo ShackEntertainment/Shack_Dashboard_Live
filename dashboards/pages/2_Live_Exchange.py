@@ -50,6 +50,17 @@ else:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict = result
     error_msg = None
 
+# Check if we got empty data
+if events_df is not None and len(events_df) == 0:
+    st.warning("⚠️ No data available from Google Sheets. Please check your connection.")
+    events_df = None
+if bookings_df is not None and len(bookings_df) == 0:
+    bookings_df = None
+if financials_df is not None and len(financials_df) == 0:
+    financials_df = None
+if artists_df is not None and len(artists_df) == 0:
+    artists_df = None
+
 # Handle case where data loading fails completely
 if events_df is None and bookings_df is None:
     st.error("❌ Failed to load any data.")

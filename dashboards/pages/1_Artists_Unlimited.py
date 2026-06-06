@@ -43,6 +43,11 @@ else:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict = result
     error_msg = None
 
+# Check if we got empty data
+if artists_df is not None and len(artists_df) == 0:
+    st.warning("⚠️ No data available from Google Sheets. Please check your connection.")
+    artists_df = None
+
 # Calculate metrics
 total_sales = len(artists_df) if artists_df is not None else 0
 total_revenue = artists_df['Fee_Amount'].sum() if artists_df is not None and 'Fee_Amount' in artists_df.columns else 0
