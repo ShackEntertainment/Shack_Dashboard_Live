@@ -1,6 +1,57 @@
-configs/credentials.json 
-configs/token.json 
-configs/.env 
-agents/executive_cache.db 
-"shack_credentials.json" 
-"shack_credentials.json" 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & Credentials (CRITICAL)
+*.json
+!package.json
+.env
+.env.local
+*.pem
+*.key
+shack_credentials.json
+shack-agent-*.json
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+temp/
