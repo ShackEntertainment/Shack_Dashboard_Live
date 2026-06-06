@@ -5,6 +5,7 @@ from datetime import datetime
 import io
 import os
 import sys
+import numpy as np
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -43,10 +44,16 @@ else:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict = result
     error_msg = None
 
-# Check if we got empty data
-if artists_df is not None and len(artists_df) == 0:
-    st.warning("⚠️ No data available from Google Sheets. Please check your connection.")
-    artists_df = None
+# Demo data for display when connection fails
+if artists_df is None or len(artists_df) == 0:
+    st.info("ℹ️ Showing demo data - connect Google Sheets for live data")
+    artists_df = pd.DataFrame({
+        'Artist_Name': ['DJ Kemet', 'Maya Strings', 'Bass Collective', 'Jazz Fusion Trio', 'Folk Revival', 'Electronic Soul'],
+        'Discipline': ['DJ/Producer', 'Visual Artist', 'DJ/Producer', 'Music', 'Music', 'Music'],
+        'Fee_Type': ['Fixed', 'Commission', 'Fixed', 'Fixed', 'Fixed', 'Fixed'],
+        'Fee_Amount': [500.00, 0.00, 300.00, 800.00, 400.00, 350.00],
+        'Payment_Status': ['Paid', 'N/A', 'Pending', 'Deposit Paid', 'Pending', 'Pending']
+    })
 
 # Calculate metrics
 total_sales = len(artists_df) if artists_df is not None else 0
@@ -110,7 +117,6 @@ if artists_df is not None and 'Fee_Amount' in artists_df.columns:
     # Create a smooth curve that ends at the total revenue
     trend_values = [total_revenue * (0.5 + 0.5 * (i / len(dates))) for i in range(len(dates))]
     # Add some randomness
-    import numpy as np
     trend_values = [v + np.random.uniform(-50, 50) for v in trend_values]
     
     trend_data = pd.DataFrame({

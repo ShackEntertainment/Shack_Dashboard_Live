@@ -36,7 +36,7 @@ st.title("🎫 Live Exchange")
 st.markdown("*Event Management & Ticketing Dashboard* | " + datetime.now().strftime('%d %B %Y'))
 st.markdown("---")
 
-# --- LOAD LIVE DATA - Same pattern as Artists Unlimited ---
+# --- LOAD LIVE DATA ---
 @st.cache_data(ttl=300)
 def get_data():
     return load_live_exchange_data()
@@ -50,16 +50,38 @@ else:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict = result
     error_msg = None
 
-# Check if we got empty data
-if events_df is not None and len(events_df) == 0:
-    st.warning("⚠️ No data available from Google Sheets. Please check your connection.")
-    events_df = None
-if bookings_df is not None and len(bookings_df) == 0:
-    bookings_df = None
-if financials_df is not None and len(financials_df) == 0:
-    financials_df = None
-if artists_df is not None and len(artists_df) == 0:
-    artists_df = None
+# Demo data for display when connection fails
+if events_df is None or len(events_df) == 0:
+    st.info("ℹ️ Showing demo data - connect Google Sheets for live data")
+    events_df = pd.DataFrame({
+        'Event_Name': ['Summer Rooftop Jam', 'Underground Bass Night', 'Jazz & Canvas Gala', 'Neon Folk Session'],
+        'Event_Date': ['2026-06-15', '2026-06-22', '2026-07-05', '2026-07-12'],
+        'Status': ['On Sale', 'Planning', 'On Sale', 'Planning'],
+        'Capacity_Total': [150, 80, 200, 40],
+        'Capacity_Remaining': [150, 80, 200, 40]
+    })
+    
+if bookings_df is None or len(bookings_df) == 0:
+    bookings_df = pd.DataFrame({
+        'Booking_ID': ['BK001', 'BK002', 'BK003', 'BK004', 'BK005', 'BK006'],
+        'Event_ID': [1, 1, 2, 3, 3, 4],
+        'Customer_Name': ['Alice Johnson', 'Bob Smith', 'Carol White', 'David Brown', 'Emma Davis', 'Frank Wilson'],
+        'Ticket_Type': ['General Admission', 'VIP', 'General Admission', 'General Admission', 'VIP', 'General Admission'],
+        'Quantity': [2, 1, 4, 1, 2, 3],
+        'Total_Price': [50.00, 75.00, 80.00, 30.00, 150.00, 75.00],
+        'Payment_Status': ['Paid', 'Paid', 'Pending', 'Paid', 'Paid', 'Pending']
+    })
+    
+if financials_df is None or len(financials_df) == 0:
+    financials_df = pd.DataFrame({
+        'Transaction_ID': ['TXN001', 'TXN002', 'TXN003', 'TXN004', 'TXN005'],
+        'Date': ['2026-05-01', '2026-05-05', '2026-05-10', '2026-05-15', '2026-05-20'],
+        'Description': ['Ticket Sales - Rooftop Jam', 'Venue Deposit', 'Artist Fee - DJ Kemet', 'Marketing', 'Equipment Rental'],
+        'Category': ['Revenue', 'Expense', 'Expense', 'Expense', 'Expense'],
+        'Amount_In': [450.00, 0.00, 0.00, 0.00, 0.00],
+        'Amount_Out': [0.00, 200.00, 500.00, 150.00, 300.00],
+        'Event_Link': ['Summer Rooftop Jam', 'Summer Rooftop Jam', 'Summer Rooftop Jam', 'General', 'General']
+    })
 
 # Handle case where data loading fails completely
 if events_df is None and bookings_df is None:
