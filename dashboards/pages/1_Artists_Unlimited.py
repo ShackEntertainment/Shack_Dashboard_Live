@@ -44,7 +44,7 @@ st.markdown("""
 
 # Page header
 st.title("🎨 Artists Unlimited")
-st.markdown("*Artist Management & Sales Tracking* | 📅 " + datetime.now().strftime("%d %B %Y"))
+st.markdown("*Artist Management & Sales Tracking* |  " + datetime.now().strftime("%d %B %Y"))
 
 # Load data
 result = load_live_exchange_data()
@@ -91,7 +91,7 @@ with st.sidebar:
     st.header("⚡ Quick Actions")
     
     if st.button("🏠 Back to Home", use_container_width=True):
-        st.switch_page("dashboards/Home.py")
+        st.switch_page("Home.py")  # FIXED PATH
     
     st.divider()
     
@@ -158,7 +158,7 @@ else:
 
 st.divider()
 
-st.subheader("🎨 All Artists")
+st.subheader(" All Artists")
 
 if artists_df is not None:
     col1, col2 = st.columns(2)

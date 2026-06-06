@@ -13,7 +13,7 @@ from news_sync import load_news_data
 # Set page config
 st.set_page_config(
     page_title="Shack News Network | Shack Entertainment",
-    page_icon="",
+    page_icon="📰",
     layout="wide"
 )
 
@@ -49,7 +49,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # Header
-st.title("📰 Shack News Network")
+st.title(" Shack News Network")
 st.markdown("*Director's Analytics Dashboard* | " + datetime.now().strftime('%d %B %Y'))
 
 # Load Data
@@ -118,7 +118,7 @@ with st.sidebar:
     st.header("⚡ Quick Actions")
     
     if st.button("🏠 Back to Home", use_container_width=True):
-        st.switch_page("dashboards/Home.py")
+        st.switch_page("Home.py")  # FIXED PATH
     
     st.divider()
     
@@ -130,15 +130,15 @@ with st.sidebar:
     if st.button("📝 Write New Article", use_container_width=True):
         st.info("📝 Content Editor - Feature coming soon!")
 
-    if st.button(" Upload YouTube Video", use_container_width=True):
-        st.info("🎥 Video Uploader - Feature coming soon!")
+    if st.button("📺 Upload YouTube Video", use_container_width=True):
+        st.info(" Video Uploader - Feature coming soon!")
 
     if st.button("📊 Export Full Report", use_container_width=True):
         st.success("📊 Report generated!")
 
 # --- MAIN TABS ---
 tab_overview, tab_youtube, tab_social, tab_content, tab_advanced = st.tabs([
-    "📊 Overview", " YouTube Studio", "📱 Social Media", "📚 Content Library", "🔬 Advanced Analytics"
+    "📊 Overview", "📺 YouTube Studio", " Social Media", "📚 Content Library", "🔬 Advanced Analytics"
 ])
 
 with tab_overview:
@@ -167,7 +167,7 @@ with tab_youtube:
         st.info("No YouTube data available yet.")
 
 with tab_social:
-    st.subheader(" Social Media Metrics")
+    st.subheader("📱 Social Media Metrics")
     if not social_df.empty:
         st.dataframe(social_df, use_container_width=True)
     else:

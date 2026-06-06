@@ -111,7 +111,7 @@ if bookings_df is not None and 'Quantity' in bookings_df.columns:
 with st.sidebar:
     # 1. Back to Home (Top)
     if st.button("🏠 Back to Home", use_container_width=True, type="primary"):
-        st.switch_page("dashboards/Home.py")
+        st.switch_page("Home.py")  # FIXED PATH
     
     st.markdown("---")
     
@@ -119,7 +119,7 @@ with st.sidebar:
     st.markdown("### ⚡ Quick Actions")
     
     # Refresh Button Logic
-    if st.button("🔄 Refresh Data", use_container_width=True):
+    if st.button(" Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.success("✅ Data refreshed!")
         st.rerun()
@@ -182,7 +182,7 @@ st.markdown("---")
 
 # --- TABS ---
 tab_events, tab_bookings, tab_financials, tab_artists = st.tabs([
-    "📅 Events", "🎫 Bookings", "💰 Financials", "🎤 Artists"
+    "📅 Events", "🎫 Bookings", "💰 Financials", " Artists"
 ])
 
 with tab_events:
