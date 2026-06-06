@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime
 import os
 import sys
@@ -13,11 +12,11 @@ from news_sync import load_news_data
 # Set page config
 st.set_page_config(
     page_title="Shack News Network | Shack Entertainment",
-    page_icon="📰",
+    page_icon="",
     layout="wide"
 )
 
-# Custom CSS for Dark Theme and Blue Buttons
+# Custom CSS for Dark Theme, Blue Buttons, and Uniform KPI Sizing
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -25,14 +24,31 @@ st.markdown("""
     h1 { color: #ffffff !important; font-weight: 800; }
     h2, h3 { color: #ffffff !important; }
     .main { background-color: #0e1117; }
-    .kpi-card { border: 1px solid #2d323e; border-radius: 12px; padding: 15px; margin-bottom: 10px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+    
+    /* Uniform KPI Cards */
+    .kpi-card { 
+        border: 1px solid #2d323e; 
+        border-radius: 12px; 
+        padding: 15px; 
+        margin-bottom: 10px; 
+        text-align: center; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
+        min-height: 135px; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center;
+    }
     .kpi-card.cyan { background: linear-gradient(145deg, #1e2626 0%, #141818 100%); border-bottom: 4px solid #06b6d4; }
     .kpi-card.green { background: linear-gradient(145deg, #1e261e 0%, #141814 100%); border-bottom: 4px solid #10b981; }
     .kpi-card.amber { background: linear-gradient(145deg, #26221e 0%, #181614 100%); border-bottom: 4px solid #f59e0b; }
     .kpi-card.purple { background: linear-gradient(145deg, #261e26 0%, #181418 100%); border-bottom: 4px solid #8b5cf6; }
+    
     .kpi-label { font-size: 0.75em; color: #a0a8c0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; }
     .kpi-value { font-size: 2em; font-weight: bold; color: #ffffff; margin: 5px 0; text-shadow: 1px 1px 2px #000; }
     .kpi-delta { font-size: 0.75em; color: #10b981; margin-top: 5px; font-weight: 600; }
+    
+    /* Sidebar Buttons */
     div.stButton > button {
         background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%) !important;
         color: white !important;
@@ -49,7 +65,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # Header
-st.title(" Shack News Network")
+st.title("📰 Shack News Network")
 st.markdown("*Director's Analytics Dashboard* | " + datetime.now().strftime('%d %B %Y'))
 
 # Load Data
@@ -67,7 +83,7 @@ def get_snap(key, default="0"):
     return snapshot_dict.get(key, default) if snapshot_dict else default
 
 # --- EXECUTIVE SUMMARY (KPIs) ---
-st.subheader("🎯 Executive Summary")
+st.subheader(" Executive Summary")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -94,7 +110,7 @@ with col2:
 with col3:
     st.markdown(f"""
     <div class="kpi-card amber">
-        <div style="font-size: 35px; margin-bottom: 8px;">💸</div>
+        <div style="font-size: 35px; margin-bottom: 8px;"></div>
         <div class="kpi-label">REFERRAL SALES</div>
         <div class="kpi-value">£{get_snap('Referral_Sales', '2,262.49')}</div>
         <div class="kpi-delta">↑ +15% this week</div>
@@ -104,7 +120,7 @@ with col3:
 with col4:
     st.markdown(f"""
     <div class="kpi-card purple">
-        <div style="font-size: 35px; margin-bottom: 8px;"></div>
+        <div style="font-size: 35px; margin-bottom: 8px;">📊</div>
         <div class="kpi-label">AVG ENGAGEMENT</div>
         <div class="kpi-value">{get_snap('Avg_Engagement_Rate', '7.4%')}</div>
         <div class="kpi-delta">↑ +2.1% this week</div>
@@ -118,7 +134,7 @@ with st.sidebar:
     st.header("⚡ Quick Actions")
     
     if st.button("🏠 Back to Home", use_container_width=True):
-        st.switch_page("Home.py")  # FIXED PATH
+        st.switch_page("Home.py")
     
     st.divider()
     
@@ -127,22 +143,22 @@ with st.sidebar:
         st.success("✅ Data synced successfully!")
         st.rerun()
 
-    if st.button("📝 Write New Article", use_container_width=True):
+    if st.button(" Write New Article", use_container_width=True):
         st.info("📝 Content Editor - Feature coming soon!")
 
     if st.button("📺 Upload YouTube Video", use_container_width=True):
-        st.info(" Video Uploader - Feature coming soon!")
+        st.info("🎥 Video Uploader - Feature coming soon!")
 
     if st.button("📊 Export Full Report", use_container_width=True):
-        st.success("📊 Report generated!")
+        st.success(" Report generated!")
 
 # --- MAIN TABS ---
 tab_overview, tab_youtube, tab_social, tab_content, tab_advanced = st.tabs([
-    "📊 Overview", "📺 YouTube Studio", " Social Media", "📚 Content Library", "🔬 Advanced Analytics"
+    " Overview", "📺 YouTube Studio", "📱 Social Media", "📚 Content Library", "🔬 Advanced Analytics"
 ])
 
 with tab_overview:
-    st.subheader("📺 YouTube Channel")
+    st.subheader(" YouTube Channel")
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Total Views", get_snap('YouTube_Views', '14,214'), "+450 this week")
@@ -153,7 +169,6 @@ with tab_overview:
     
     st.subheader("📱 Social Followers")
     if not social_df.empty:
-        # Aggregate followers by platform
         platform_counts = social_df.groupby('Platform')['Followers'].max()
         st.bar_chart(platform_counts)
     else:
