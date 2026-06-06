@@ -20,12 +20,19 @@ def get_google_credentials():
         try:
             secrets = st.secrets['connections']['gsheets']
             
+            # Get private key and handle both escaped and unescaped newlines
+            private_key = secrets.get('private_key', '')
+            
+            # If the key contains literal \n, convert to actual newlines
+            if '\\n' in private_key:
+                private_key = private_key.replace('\\n', '\n')
+            
             # Build credentials dict from flat TOML format
             creds_dict = {
                 "type": "service_account",
                 "project_id": secrets.get('project_id', ''),
                 "private_key_id": secrets.get('private_key_id', ''),
-                "private_key": secrets.get('private_key', '').replace('\\n', '\n'),
+                "private_key": private_key,
                 "client_email": secrets.get('client_email', ''),
                 "client_id": secrets.get('client_id', ''),
                 "auth_uri": secrets.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
@@ -40,7 +47,7 @@ def get_google_credentials():
             st.error(f"Error loading credentials from secrets: {e}")
             return None
     
-    # Fallback to local file
+    # Fallback to local file (for local development)
     if os.path.exists('shack_credentials.json'):
         try:
             return Credentials.from_service_account_file('shack_credentials.json')
@@ -177,3 +184,89 @@ def load_live_exchange_data():
     except Exception as e:
         demo_data = get_demo_data()
         return demo_data + (f"Unexpected error: {str(e)}",)
+
+def update_sheet_data(worksheet, df):
+    """Update a Google Sheet with DataFrame data"""
+    
+    if not GOOGLE_SHEETS_AVAILABLE:
+        return False, "Google Sheets libraries not available"
+    
+    try:
+        creds = get_google_credentials()
+        if not creds:
+            return False, "Credentials not found"
+        
+        gc = gspread.authorize(creds)
+        spreadsheet_name = st.secrets.get('connections', {}).get('gsheets', {}).get('spreadsheet', 'Shack_Live_Exchange_Master')
+        spreadsheet = gc.open(spreadsheet_name)
+        
+        # Clear existing data
+        worksheet.clear()
+        
+        # Update with new data
+        worksheet.update([df.columns.tolist()] + df.values.tolist())
+        
+        return True, "Success"
+    except Exception as e:
+        return False, f"Error updating sheet: {str(e)}"
+
+def add_booking_to_sheet(booking_data):
+    """Add a new booking to Google Sheets"""
+    
+    if not GOOGLE_SHEETS_AVAILABLE:
+        return False, "Google Sheets libraries not available"
+    
+    try:
+        creds = get_google_credentials()
+        if not creds:
+            return False, "Credentials not found"
+        
+        gc = gspread.authorize(creds)
+        spreadsheet_name = st.secrets.get('connections', {}).get('gsheets', {}).get('spreadsheet', 'Shack_Live_Exchange_Master')
+        spreadsheet = gc.open(spreadsheet_name)
+        bookings_sheet = spreadsheet.worksheet("02_Bookings")
+        
+        # Append new row
+        bookings_sheet.append_row([
+            booking_data.get('Booking_ID', ''),
+            booking_data.get('Event_ID', ''),
+            booking_data.get('Customer_Name', ''),
+            booking_data.get('Ticket_Type', ''),
+            booking_data.get('Quantity', ''),
+            booking_data.get('Unit_Price', ''),
+            booking_data.get('Total_Price', ''),
+            booking_data.get('Booking_Date', ''),
+            booking_data.get('Payment_Status', '')
+        ])
+        
+        return True, "Booking added successfully"
+    except Exception as e:
+        return False, f"Error adding booking: {str(e)}"
+
+def log_operation(action, user, details):
+    """Log an operation to the operations sheet"""
+    
+    if not GOOGLE_SHEETS_AVAILABLE:
+        return False, "Google Sheets libraries not available"
+    
+    try:
+        creds = get_google_credentials()
+        if not creds:
+            return False, "Credentials not found"
+        
+        gc = gspread.authorize(creds)
+        spreadsheet_name = st.secrets.get('connections', {}).get('gsheets', {}).get('spreadsheet', 'Shack_Live_Exchange_Master')
+        spreadsheet = gc.open(spreadsheet_name)
+        ops_sheet = spreadsheet.worksheet("05_Operations_Log")
+        
+        # Append new log entry
+        ops_sheet.append_row([
+            datetime.now().strftime('%Y-%m-%d'),
+            action,
+            user,
+            details
+        ])
+        
+        return True, "Operation logged"
+    except Exception as e:
+        return False, f"Error logging operation: {str(e)}"
