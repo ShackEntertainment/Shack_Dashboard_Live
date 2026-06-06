@@ -6,9 +6,9 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from finance_sync import load_finance_data
+from command_sync import load_command_data
 
-st.set_page_config(page_title="Financial Overview | Shack Entertainment", page_icon="💰", layout="wide")
+st.set_page_config(page_title="Command Center | Shack Entertainment", page_icon="", layout="wide")
 
 st.markdown("""
     <style>
@@ -30,10 +30,10 @@ st.markdown("""
         justify-content: space-between; 
         align-items: center;
     }
+    .kpi-card.blue { background: linear-gradient(145deg, #1e2026 0%, #141518 100%); border-bottom: 4px solid #3b82f6; }
     .kpi-card.green { background: linear-gradient(145deg, #1e261e 0%, #141814 100%); border-bottom: 4px solid #10b981; }
     .kpi-card.red { background: linear-gradient(145deg, #261e1e 0%, #181414 100%); border-bottom: 4px solid #ef4444; }
-    .kpi-card.blue { background: linear-gradient(145deg, #1e2026 0%, #141518 100%); border-bottom: 4px solid #3b82f6; }
-    .kpi-card.amber { background: linear-gradient(145deg, #26221e 0%, #181614 100%); border-bottom: 4px solid #f59e0b; }
+    .kpi-card.purple { background: linear-gradient(145deg, #261e26 0%, #181418 100%); border-bottom: 4px solid #8b5cf6; }
     .kpi-icon { font-size: 32px; margin-bottom: 10px; }
     .kpi-label { font-size: 0.7em; color: #a0a8c0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0; }
     .kpi-value { font-size: 1.8em; font-weight: bold; color: #ffffff; margin: 5px 0; text-shadow: 1px 1px 2px #000; }
@@ -53,62 +53,62 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title(" Financial Overview")
-st.markdown("*Executive Finance Dashboard* | " + datetime.now().strftime('%d %B %Y'))
+st.title("🚀 Director's Command Center")
+st.markdown("*Strategic Operations Dashboard* | " + datetime.now().strftime('%d %B %Y'))
 
 # Load Data
-result = load_finance_data()
+result = load_command_data()
 if len(result) == 5:
-    revenue_df, expense_df, cashflow_df, snapshot_dict, error_msg = result
+    projects_df, kpi_df, team_df, snapshot_dict, error_msg = result
     if error_msg:
         st.warning(f"⚠️ {error_msg}")
 else:
-    revenue_df, expense_df, cashflow_df, snapshot_dict = result
+    projects_df, kpi_df, team_df, snapshot_dict = result
     error_msg = None
 
 def get_snap(key, default="0"):
     return snapshot_dict.get(key, default) if snapshot_dict else default
 
-st.subheader("📊 Financial Summary")
+st.subheader(" Operational Summary")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.markdown(f"""
-    <div class="kpi-card green">
-        <div class="kpi-icon">💷</div>
-        <div class="kpi-label">TOTAL REVENUE</div>
-        <div class="kpi-value">£{get_snap('Total_Revenue', '0.00')}</div>
-        <div class="kpi-delta">↑ +12% vs last month</div>
+    <div class="kpi-card blue">
+        <div class="kpi-icon">📁</div>
+        <div class="kpi-label">ACTIVE PROJECTS</div>
+        <div class="kpi-value">{get_snap('Active_Projects', '0')}</div>
+        <div class="kpi-delta">↑ +2 new this week</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
     st.markdown(f"""
-    <div class="kpi-card red">
-        <div class="kpi-icon"></div>
-        <div class="kpi-label">TOTAL EXPENSES</div>
-        <div class="kpi-value">£{get_snap('Total_Expenses', '0.00')}</div>
-        <div class="kpi-delta">↑ +5% vs last month</div>
+    <div class="kpi-card green">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-label">ON TRACK</div>
+        <div class="kpi-value">{get_snap('On_Track', '0')}</div>
+        <div class="kpi-delta">↑ 85% success rate</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
     st.markdown(f"""
-    <div class="kpi-card blue">
-        <div class="kpi-icon"></div>
-        <div class="kpi-label">NET PROFIT</div>
-        <div class="kpi-value">£{get_snap('Net_Profit', '0.00')}</div>
-        <div class="kpi-delta">↑ +8% margin</div>
+    <div class="kpi-card red">
+        <div class="kpi-icon">⚠️</div>
+        <div class="kpi-label">AT RISK</div>
+        <div class="kpi-value">{get_snap('At_Risk', '0')}</div>
+        <div class="kpi-delta">↓ -1 from last week</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col4:
     st.markdown(f"""
-    <div class="kpi-card amber">
-        <div class="kpi-icon">🏦</div>
-        <div class="kpi-label">CASH RESERVE</div>
-        <div class="kpi-value">£{get_snap('Cash_Reserve', '0.00')}</div>
-        <div class="kpi-delta">{get_snap('Runway_Months', '0')} months runway</div>
+    <div class="kpi-card purple">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-label">BUDGET UTILIZATION</div>
+        <div class="kpi-value">{get_snap('Budget_Utilization', '0%')}</div>
+        <div class="kpi-delta">↑ On target</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -123,31 +123,33 @@ with st.sidebar:
         st.cache_data.clear()
         st.success("✅ Data refreshed!")
         st.rerun()
-    if st.button("📥 Export Financials", use_container_width=True):
-        st.success("📥 Report downloaded!")
+    if st.button("📝 New Project", use_container_width=True):
+        st.info("📝 Project Creator - Feature coming soon!")
+    if st.button("👥 Team View", use_container_width=True):
+        st.info("👥 Team Management - Feature coming soon!")
 
-tab_rev, tab_exp, tab_cash = st.tabs(["💷 Revenue Streams", "💸 Expense Breakdown", "🌊 Cash Flow"])
+tab_proj, tab_kpi, tab_team = st.tabs(["📁 Project Pipeline", "📊 KPI Tracker", "👥 Team Activity"])
 
-with tab_rev:
-    st.subheader("💷 Revenue Streams")
-    if not revenue_df.empty:
-        st.dataframe(revenue_df, use_container_width=True)
+with tab_proj:
+    st.subheader("📁 Project Pipeline")
+    if not projects_df.empty:
+        st.dataframe(projects_df, use_container_width=True)
     else:
-        st.info("No revenue data available yet.")
+        st.info("No project data available yet.")
 
-with tab_exp:
-    st.subheader("💸 Expense Breakdown")
-    if not expense_df.empty:
-        st.dataframe(expense_df, use_container_width=True)
+with tab_kpi:
+    st.subheader("📊 KPI Tracker")
+    if not kpi_df.empty:
+        st.dataframe(kpi_df, use_container_width=True)
     else:
-        st.info("No expense data available yet.")
+        st.info("No KPI data available yet.")
 
-with tab_cash:
-    st.subheader("🌊 Cash Flow")
-    if not cashflow_df.empty:
-        st.dataframe(cashflow_df, use_container_width=True)
+with tab_team:
+    st.subheader("👥 Team Activity")
+    if not team_df.empty:
+        st.dataframe(team_df, use_container_width=True)
     else:
-        st.info("No cash flow data available yet.")
+        st.info("No team activity data available yet.")
 
 st.markdown("---")
-st.caption("🔄 Data auto-refreshes every 30 minutes | Last updated: " + datetime.now().strftime('%H:%M:%S'))
+st.caption("🔄 Data auto-refreshes every 15 minutes | Last updated: " + datetime.now().strftime('%H:%M:%S'))
