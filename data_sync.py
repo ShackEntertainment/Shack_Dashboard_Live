@@ -15,35 +15,32 @@ except ImportError:
 def get_google_credentials():
     """Get Google Sheets credentials from Streamlit secrets or local file"""
     
-    # First try Streamlit secrets (flat TOML format)
-    if hasattr(st, 'secrets') and 'google_sheets' in st.secrets:
+    # Try Streamlit secrets - using official [connections.gsheets] format
+    if hasattr(st, 'secrets') and 'connections' in st.secrets and 'gsheets' in st.secrets['connections']:
         try:
-            # Check if it's the flat format (individual keys)
-            if 'private_key' in st.secrets['google_sheets']:
-                creds_dict = {
-                    "type": st.secrets['google_sheets'].get('type', 'service_account'),
-                    "project_id": st.secrets['google_sheets'].get('project_id', ''),
-                    "private_key_id": st.secrets['google_sheets'].get('private_key_id', ''),
-                    "private_key": st.secrets['google_sheets'].get('private_key', '').replace('\\n', '\n'),
-                    "client_email": st.secrets['google_sheets'].get('client_email', ''),
-                    "client_id": st.secrets['google_sheets'].get('client_id', ''),
-                    "auth_uri": st.secrets['google_sheets'].get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
-                    "token_uri": st.secrets['google_sheets'].get('token_uri', 'https://oauth2.googleapis.com/token'),
-                    "auth_provider_x509_cert_url": st.secrets['google_sheets'].get('auth_provider_x509_cert_url', 'https://www.googleapis.com/oauth2/v1/certs'),
-                    "client_x509_cert_url": st.secrets['google_sheets'].get('client_x509_cert_url', ''),
-                    "universe_domain": st.secrets['google_sheets'].get('universe_domain', 'googleapis.com')
-                }
-                return Credentials.from_service_account_info(creds_dict)
-            # Fallback to JSON string format
-            elif 'credentials' in st.secrets['google_sheets']:
-                creds_json = st.secrets['google_sheets']['credentials']
-                creds_dict = json.loads(creds_json)
-                return Credentials.from_service_account_info(creds_dict)
+            secrets = st.secrets['connections']['gsheets']
+            
+            # Build credentials dict from flat TOML format
+            creds_dict = {
+                "type": "service_account",
+                "project_id": secrets.get('project_id', ''),
+                "private_key_id": secrets.get('private_key_id', ''),
+                "private_key": secrets.get('private_key', '').replace('\\n', '\n'),
+                "client_email": secrets.get('client_email', ''),
+                "client_id": secrets.get('client_id', ''),
+                "auth_uri": secrets.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
+                "token_uri": secrets.get('token_uri', 'https://oauth2.googleapis.com/token'),
+                "auth_provider_x509_cert_url": secrets.get('auth_provider_x509_cert_url', 'https://www.googleapis.com/oauth2/v1/certs'),
+                "client_x509_cert_url": secrets.get('client_x509_cert_url', ''),
+                "universe_domain": secrets.get('universe_domain', 'googleapis.com')
+            }
+            
+            return Credentials.from_service_account_info(creds_dict)
         except Exception as e:
             st.error(f"Error loading credentials from secrets: {e}")
             return None
     
-    # Fallback to local file (for local development)
+    # Fallback to local file
     if os.path.exists('shack_credentials.json'):
         try:
             return Credentials.from_service_account_file('shack_credentials.json')
@@ -56,7 +53,6 @@ def get_google_credentials():
 def get_demo_data():
     """Return sample data when Google Sheets is unavailable"""
     
-    # Events demo data
     events_df = pd.DataFrame({
         'Event_Name': ['Summer Rooftop Jam', 'Underground Bass Night', 'Jazz & Canvas Gala', 'Neon Folk Session'],
         'Event_Date': ['2026-06-15', '2026-06-22', '2026-07-05', '2026-07-12'],
@@ -66,7 +62,6 @@ def get_demo_data():
         'Tickets_Sold': [0, 0, 0, 0]
     })
     
-    # Bookings demo data
     bookings_df = pd.DataFrame({
         'Booking_ID': ['BK001', 'BK002', 'BK003', 'BK004', 'BK005', 'BK006'],
         'Event_ID': [1, 1, 2, 3, 3, 4],
@@ -79,7 +74,6 @@ def get_demo_data():
         'Payment_Status': ['Paid', 'Paid', 'Pending', 'Paid', 'Paid', 'Pending']
     })
     
-    # Artists demo data
     artists_df = pd.DataFrame({
         'Artist_Name': ['DJ Kemet', 'Maya Strings', 'Bass Collective', 'Jazz Fusion Trio', 'Folk Revival', 'Electronic Soul'],
         'Discipline': ['DJ/Producer', 'Visual Artist', 'DJ/Producer', 'Music', 'Music', 'Music'],
@@ -88,7 +82,6 @@ def get_demo_data():
         'Payment_Status': ['Paid', 'N/A', 'Pending', 'Deposit Paid', 'Pending', 'Pending']
     })
     
-    # Financials demo data
     financials_df = pd.DataFrame({
         'Transaction_ID': ['TXN001', 'TXN002', 'TXN003', 'TXN004', 'TXN005'],
         'Date': ['2026-05-01', '2026-05-05', '2026-05-10', '2026-05-15', '2026-05-20'],
@@ -99,7 +92,6 @@ def get_demo_data():
         'Event_Link': ['Summer Rooftop Jam', 'Summer Rooftop Jam', 'Summer Rooftop Jam', 'General', 'General']
     })
     
-    # Operations demo data
     ops_df = pd.DataFrame({
         'Date': ['2026-05-01', '2026-05-05', '2026-05-10'],
         'Action': ['Event Created', 'Venue Booked', 'Artist Confirmed'],
@@ -107,7 +99,6 @@ def get_demo_data():
         'Details': ['Summer Rooftop Jam created', 'Rooftop venue secured', 'DJ Kemet confirmed']
     })
     
-    # Snapshot demo data
     snapshot_dict = {
         'quarter': 'Q2 2026',
         'total_revenue': 2450.00,
@@ -127,23 +118,18 @@ def load_live_exchange_data():
         return demo_data + ("Google Sheets libraries not installed",)
     
     try:
-        # Get credentials
         creds = get_google_credentials()
         if not creds:
             demo_data = get_demo_data()
-            if hasattr(st, 'secrets') and 'google_sheets' in st.secrets:
-                return demo_data + ("Credentials found but invalid. Check JSON format in Secrets.",)
+            if hasattr(st, 'secrets'):
+                return demo_data + ("Credentials found but invalid. Check Secrets format.",)
             else:
                 return demo_data + ("Credentials file not found. Running in demo mode.",)
         
-        # Authenticate with Google Sheets
         gc = gspread.authorize(creds)
-        
-        # Get spreadsheet name from secrets or use default
-        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
+        spreadsheet_name = st.secrets.get('connections', {}).get('gsheets', {}).get('spreadsheet', 'Shack_Live_Exchange_Master')
         
         try:
-            # Open the spreadsheet
             spreadsheet = gc.open(spreadsheet_name)
         except gspread.exceptions.SpreadsheetNotFound:
             demo_data = get_demo_data()
@@ -153,7 +139,6 @@ def load_live_exchange_data():
             return demo_data + (f"Error opening spreadsheet: {str(e)}",)
         
         try:
-            # Load all worksheets
             events_sheet = spreadsheet.worksheet("01_Events")
             bookings_sheet = spreadsheet.worksheet("02_Bookings")
             artists_sheet = spreadsheet.worksheet("03_Artists")
@@ -161,14 +146,12 @@ def load_live_exchange_data():
             ops_sheet = spreadsheet.worksheet("05_Operations_Log")
             snapshot_sheet = spreadsheet.worksheet("06_Snapshot")
             
-            # Convert to DataFrames
             events_df = pd.DataFrame(events_sheet.get_all_records())
             bookings_df = pd.DataFrame(bookings_sheet.get_all_records())
             artists_df = pd.DataFrame(artists_sheet.get_all_records())
             financials_df = pd.DataFrame(financials_sheet.get_all_records())
             ops_df = pd.DataFrame(ops_sheet.get_all_records())
             
-            # Get snapshot data
             snapshot_data = snapshot_sheet.get_all_values()
             snapshot_dict = {
                 'quarter': snapshot_data[1][0] if len(snapshot_data) > 1 else 'N/A',
@@ -194,89 +177,3 @@ def load_live_exchange_data():
     except Exception as e:
         demo_data = get_demo_data()
         return demo_data + (f"Unexpected error: {str(e)}",)
-
-def update_sheet_data(worksheet, df):
-    """Update a Google Sheet with DataFrame data"""
-    
-    if not GOOGLE_SHEETS_AVAILABLE:
-        return False, "Google Sheets libraries not available"
-    
-    try:
-        creds = get_google_credentials()
-        if not creds:
-            return False, "Credentials not found"
-        
-        gc = gspread.authorize(creds)
-        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
-        spreadsheet = gc.open(spreadsheet_name)
-        
-        # Clear existing data
-        worksheet.clear()
-        
-        # Update with new data
-        worksheet.update([df.columns.tolist()] + df.values.tolist())
-        
-        return True, "Success"
-    except Exception as e:
-        return False, f"Error updating sheet: {str(e)}"
-
-def add_booking_to_sheet(booking_data):
-    """Add a new booking to Google Sheets"""
-    
-    if not GOOGLE_SHEETS_AVAILABLE:
-        return False, "Google Sheets libraries not available"
-    
-    try:
-        creds = get_google_credentials()
-        if not creds:
-            return False, "Credentials not found"
-        
-        gc = gspread.authorize(creds)
-        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
-        spreadsheet = gc.open(spreadsheet_name)
-        bookings_sheet = spreadsheet.worksheet("02_Bookings")
-        
-        # Append new row
-        bookings_sheet.append_row([
-            booking_data.get('Booking_ID', ''),
-            booking_data.get('Event_ID', ''),
-            booking_data.get('Customer_Name', ''),
-            booking_data.get('Ticket_Type', ''),
-            booking_data.get('Quantity', ''),
-            booking_data.get('Unit_Price', ''),
-            booking_data.get('Total_Price', ''),
-            booking_data.get('Booking_Date', ''),
-            booking_data.get('Payment_Status', '')
-        ])
-        
-        return True, "Booking added successfully"
-    except Exception as e:
-        return False, f"Error adding booking: {str(e)}"
-
-def log_operation(action, user, details):
-    """Log an operation to the operations sheet"""
-    
-    if not GOOGLE_SHEETS_AVAILABLE:
-        return False, "Google Sheets libraries not available"
-    
-    try:
-        creds = get_google_credentials()
-        if not creds:
-            return False, "Credentials not found"
-        
-        gc = gspread.authorize(creds)
-        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
-        spreadsheet = gc.open(spreadsheet_name)
-        ops_sheet = spreadsheet.worksheet("05_Operations_Log")
-        
-        # Append new log entry
-        ops_sheet.append_row([
-            datetime.now().strftime('%Y-%m-%d'),
-            action,
-            user,
-            details
-        ])
-        
-        return True, "Operation logged"
-    except Exception as e:
-        return False, f"Error logging operation: {str(e)}"
