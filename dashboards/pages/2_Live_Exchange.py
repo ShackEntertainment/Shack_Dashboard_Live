@@ -36,7 +36,7 @@ st.title("🎫 Live Exchange")
 st.markdown("*Event Management & Ticketing Dashboard* | " + datetime.now().strftime('%d %B %Y'))
 st.markdown("---")
 
-# --- LOAD LIVE DATA - Handle 7-value return ---
+# --- LOAD LIVE DATA - Same pattern as Artists Unlimited ---
 @st.cache_data(ttl=300)
 def get_data():
     return load_live_exchange_data()
@@ -44,14 +44,11 @@ def get_data():
 result = get_data()
 if len(result) == 7:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict, error_msg = result
+    if error_msg:
+        st.warning(f"⚠️ {error_msg}")
 else:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict = result
     error_msg = None
-
-# Show error if connection failed
-if error_msg:
-    st.error(f"🔌 Connection Issue: {error_msg}")
-    st.info("Switching to demo data for display.")
 
 # Handle case where data loading fails completely
 if events_df is None and bookings_df is None:
