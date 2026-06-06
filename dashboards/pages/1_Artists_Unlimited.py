@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-import io
 import os
 import sys
 import numpy as np
@@ -18,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Hide default Streamlit elements
+# --- CUSTOM STYLING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -26,6 +25,20 @@ st.markdown("""
     h1 { color: #ffffff !important; font-weight: 800; }
     h2 { color: #ffffff !important; font-weight: 700; }
     h3 { color: #ffffff !important; font-weight: 600; }
+    
+    /* Sidebar Button Styling */
+    div.stButton > button {
+        background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 8px 16px !important;
+        font-weight: 600 !important;
+        width: 100% !important;
+    }
+    div.stButton > button:hover {
+        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%) !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -33,18 +46,17 @@ st.markdown("""
 st.title("🎨 Artists Unlimited")
 st.markdown("*Artist Management & Sales Tracking* | 📅 " + datetime.now().strftime("%d %B %Y"))
 
-# Load data - handle the new 7-value return format
+# Load data
 result = load_live_exchange_data()
 if len(result) == 7:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict, error_msg = result
     if error_msg:
         st.warning(f"⚠️ {error_msg}")
 else:
-    # Fallback for old format
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict = result
     error_msg = None
 
-# Demo data for display when connection fails
+# Demo data fallback
 if artists_df is None or len(artists_df) == 0:
     st.info("ℹ️ Showing demo data - connect Google Sheets for live data")
     artists_df = pd.DataFrame({
@@ -74,11 +86,11 @@ with col4:
 
 st.divider()
 
-# Sidebar Quick Actions
+# --- SIDEBAR ---
 with st.sidebar:
     st.header("⚡ Quick Actions")
     
-    if st.button("🏠 Back to Home", use_container_width=True, type="primary"):
+    if st.button("🏠 Back to Home", use_container_width=True):
         st.switch_page("dashboards/Home.py")
     
     st.divider()
@@ -103,20 +115,16 @@ with st.sidebar:
     if st.button("🔔 Test Low Stock Alert", use_container_width=True):
         st.warning("⚠️ Low Stock Alert: 1 item(s) need attention")
 
-    if st.button("📷 Scan Barcode", use_container_width=True):
+    if st.button(" Scan Barcode", use_container_width=True):
         st.info("📷 Barcode scanner - Feature coming soon!")
 
-# --- MAIN CONTENT AREA ---
+# --- MAIN CONTENT ---
 
-# 1. Sales Trend (Full Width)
 st.subheader("📈 Sales Trend")
 
 if artists_df is not None and 'Fee_Amount' in artists_df.columns:
-    # Create sample trend data based on real revenue
     dates = pd.date_range(start='2026-05-01', end='2026-06-05', freq='D')
-    # Create a smooth curve that ends at the total revenue
     trend_values = [total_revenue * (0.5 + 0.5 * (i / len(dates))) for i in range(len(dates))]
-    # Add some randomness
     trend_values = [v + np.random.uniform(-50, 50) for v in trend_values]
     
     trend_data = pd.DataFrame({
@@ -132,14 +140,10 @@ else:
 
 st.divider()
 
-# 2. Recent Sales (Full Width Table)
 st.subheader("📋 Recent Sales")
 
 if artists_df is not None:
-    # Display recent sales (Full width table)
     recent_sales = artists_df.head(10) if len(artists_df) > 10 else artists_df
-    
-    # Rename columns for better display if needed
     display_df = recent_sales[['Artist_Name', 'Discipline', 'Fee_Amount', 'Payment_Status']].copy()
     display_df.columns = ['Artist', 'Discipline', 'Fee', 'Status']
     
@@ -154,11 +158,9 @@ else:
 
 st.divider()
 
-# 3. All Artists (Filterable Table)
 st.subheader("🎨 All Artists")
 
 if artists_df is not None:
-    # Filter options
     col1, col2 = st.columns(2)
     with col1:
         discipline_filter = st.multiselect(
@@ -174,14 +176,12 @@ if artists_df is not None:
             default=[]
         )
     
-    # Apply filters
     filtered_df = artists_df.copy()
     if discipline_filter:
         filtered_df = filtered_df[filtered_df['Discipline'].isin(discipline_filter)]
     if status_filter:
         filtered_df = filtered_df[filtered_df['Payment_Status'].isin(status_filter)]
     
-    # Display table
     st.dataframe(
         filtered_df,
         use_container_width=True,
@@ -189,7 +189,6 @@ if artists_df is not None:
         height=400
     )
     
-    # Summary stats
     st.subheader("📊 Summary Statistics")
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -201,6 +200,5 @@ if artists_df is not None:
 else:
     st.info("No artist data available")
 
-# Footer
 st.divider()
 st.markdown("**Shack Entertainment** | Artists Unlimited - Creative Growth Engine")
