@@ -3,7 +3,6 @@ import pandas as pd
 import os
 from datetime import datetime
 import json
-import base64
 
 # Try to import Google libraries safely
 try:
@@ -14,40 +13,30 @@ except ImportError:
     GOOGLE_SHEETS_AVAILABLE = False
 
 def get_google_credentials():
-    """Get Google Sheets credentials from Streamlit secrets"""
+    """Get Google Sheets credentials from Streamlit secrets using [connections.gsheets] format"""
     
-    if not hasattr(st, 'secrets') or 'google_sheets' not in st.secrets:
+    if not hasattr(st, 'secrets'):
+        if os.path.exists('shack_credentials.json'):
+            try:
+                return Credentials.from_service_account_file('shack_credentials.json')
+            except Exception as e:
+                st.error(f"Error loading local credentials: {e}")
+                return None
         return None
     
     try:
-        secrets = st.secrets['google_sheets']
-        
-        # 1. Try the Base64 format (Best for Streamlit Cloud)
-        if 'credentials_b64' in secrets:
-            b64_string = secrets['credentials_b64']
-            # Decode base64 to string, then string to JSON
-            json_string = base64.b64decode(b64_string).decode('utf-8')
-            creds_dict = json.loads(json_string)
-            return Credentials.from_service_account_info(creds_dict)
-        
-        # 2. Fallback to JSON String format
-        elif 'credentials' in secrets:
-            creds_json = secrets['credentials']
-            creds_dict = json.loads(creds_json)
-            return Credentials.from_service_account_info(creds_dict)
+        # Official Streamlit format: [connections.gsheets]
+        if 'connections' in st.secrets and 'gsheets' in st.secrets['connections']:
+            secrets = st.secrets['connections']['gsheets']
             
-        # 3. Fallback to Flat format (with newline handling)
-        else:
+            # Extract private key - TOML triple quotes preserve actual newlines
             private_key = secrets.get('private_key', '')
-            # If newlines are escaped, convert them
-            if '\\n' in private_key:
-                private_key = private_key.replace('\\n', '\n')
             
             creds_dict = {
-                "type": "service_account",
+                "type": secrets.get('type', 'service_account'),
                 "project_id": secrets.get('project_id', ''),
                 "private_key_id": secrets.get('private_key_id', ''),
-                "private_key": private_key,
+                "private_key": private_key,  # Already has real newlines from TOML
                 "client_email": secrets.get('client_email', ''),
                 "client_id": secrets.get('client_id', ''),
                 "auth_uri": secrets.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
@@ -56,10 +45,12 @@ def get_google_credentials():
                 "client_x509_cert_url": secrets.get('client_x509_cert_url', ''),
                 "universe_domain": secrets.get('universe_domain', 'googleapis.com')
             }
-            return Credentials.from_service_account_info(creds_dict)
             
+            return Credentials.from_service_account_info(creds_dict)
+        
+        return None
     except Exception as e:
-        st.error(f"Error loading credentials: {e}")
+        st.error(f"Error loading credentials: {type(e).__name__}: {e}")
         return None
 
 def load_live_exchange_data():
@@ -75,10 +66,10 @@ def load_live_exchange_data():
         if not creds:
             return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), 
                    pd.DataFrame(), pd.DataFrame(), {}, 
-                   "Failed to load credentials.")
+                   "Failed to load credentials. Check Streamlit secrets.")
         
         gc = gspread.authorize(creds)
-        spreadsheet_name = st.secrets.get('google_sheets', {}).get('spreadsheet_name', 'Shack_Live_Exchange_Master')
+        spreadsheet_name = st.secrets.get('connections', {}).get('gsheets', {}).get('spreadsheet', 'Shack_Live_Exchange_Master')
         
         try:
             spreadsheet = gc.open(spreadsheet_name)
