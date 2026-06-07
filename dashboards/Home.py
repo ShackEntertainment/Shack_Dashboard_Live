@@ -10,15 +10,18 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
+# Custom CSS - FIXED SPACING
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    h1 { color: #ffffff !important; font-weight: 800; }
+    h1 { color: #ffffff !important; font-weight: 800; margin-top: -20px !important; }
     h2 { color: #ffffff !important; font-weight: 700; }
     h3 { color: #ffffff !important; font-weight: 600; }
     .main { background-color: #0e1117; }
+    
+    /* Reduce space between logo and title */
+    .stColumns { align-items: center !important; }
     
     .kpi-card { 
         border: 1px solid #2d323e; 
@@ -62,18 +65,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- HEADER WITH LOGO IMAGE (FIXED PATH) ---
+# --- HEADER WITH LOGO IMAGE (FIXED) ---
 col_logo, col_title = st.columns([1, 4])
 
 with col_logo:
-    # Build absolute path dynamically for Streamlit Cloud
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    logo_path = os.path.join(base_dir, "assets", "shack_main.png")
-    
-    if os.path.exists(logo_path):
-        st.image(logo_path, width=80)
-    else:
-        st.markdown("<div style='font-size: 60px;'>🏠</div>", unsafe_allow_html=True)
+    # Try multiple path approaches
+    try:
+        st.image("assets/shack_main.png", width=80)
+    except:
+        try:
+            st.image("../assets/shack_main.png", width=80)
+        except:
+            st.markdown("<div style='font-size: 60px;'>🏠</div>", unsafe_allow_html=True)
 
 with col_title:
     st.title("Shack Entertainment")
@@ -81,7 +84,7 @@ with col_title:
 
 st.markdown("---")
 
-# --- EXECUTIVE SUMMARY (KPIs) ---
+# --- EXECUTIVE SUMMARY (KPIs) WITH CORRECT LOGOS ---
 st.subheader(" Executive Summary")
 
 col1, col2, col3, col4, col5 = st.columns(5)
@@ -89,7 +92,9 @@ col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     st.markdown(f"""
     <div class="kpi-card green">
-        <div style="font-size: 32px; margin-bottom: 10px;">🎨</div>
+        <div style="margin-bottom: 10px;">
+            <img src="assets/artists_unlimited.png" style="width: 48px; height: 48px; object-fit: contain;">
+        </div>
         <div class="kpi-label">ARTISTS UNLIMITED</div>
         <div class="kpi-value">£230.00</div>
         <div class="kpi-delta">↑ +4 sales • 0 artists</div>
@@ -99,7 +104,9 @@ with col1:
 with col2:
     st.markdown(f"""
     <div class="kpi-card blue">
-        <div style="font-size: 32px; margin-bottom: 10px;">🎫</div>
+        <div style="margin-bottom: 10px;">
+            <img src="assets/live_exchange.png" style="width: 48px; height: 48px; object-fit: contain;">
+        </div>
         <div class="kpi-label">LIVE EXCHANGE</div>
         <div class="kpi-value">£1,240.00</div>
         <div class="kpi-delta">↑ +87 tickets • 2 events</div>
@@ -109,7 +116,9 @@ with col2:
 with col3:
     st.markdown(f"""
     <div class="kpi-card cyan">
-        <div style="font-size: 32px; margin-bottom: 10px;">📰</div>
+        <div style="margin-bottom: 10px;">
+            <img src="assets/shack_news.png" style="width: 48px; height: 48px; object-fit: contain;">
+        </div>
         <div class="kpi-label">NEWS NETWORK</div>
         <div class="kpi-value">12</div>
         <div class="kpi-delta">↑ 3200 views • 48% growth</div>
@@ -119,7 +128,9 @@ with col3:
 with col4:
     st.markdown(f"""
     <div class="kpi-card amber">
-        <div style="font-size: 32px; margin-bottom: 10px;">🤝</div>
+        <div style="margin-bottom: 10px;">
+            <img src="assets/shack_light_logo.png" style="width: 48px; height: 48px; object-fit: contain;">
+        </div>
         <div class="kpi-label">PARTNERSHIPS</div>
         <div class="kpi-value">£0</div>
         <div class="kpi-delta">↑ £0/mo • 0 active</div>
@@ -129,7 +140,9 @@ with col4:
 with col5:
     st.markdown(f"""
     <div class="kpi-card purple">
-        <div style="font-size: 32px; margin-bottom: 10px;">💰</div>
+        <div style="margin-bottom: 10px;">
+            <img src="assets/shack_main.png" style="width: 48px; height: 48px; object-fit: contain;">
+        </div>
         <div class="kpi-label">FINANCIAL OVERVIEW</div>
         <div class="kpi-value">£1,470.00</div>
         <div class="kpi-delta">↑ £441.00 Shack (30%)</div>
