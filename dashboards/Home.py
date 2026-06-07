@@ -62,12 +62,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- HEADER WITH LOGO IMAGE ---
+# --- HEADER WITH LOGO IMAGE (FIXED PATH) ---
 col_logo, col_title = st.columns([1, 4])
 
 with col_logo:
-    # Navigate up one directory from 'dashboards' to 'assets'
-    st.image("../assets/shack_main.png", width=80)
+    # Build absolute path dynamically for Streamlit Cloud
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    logo_path = os.path.join(base_dir, "assets", "shack_main.png")
+    
+    if os.path.exists(logo_path):
+        st.image(logo_path, width=80)
+    else:
+        st.markdown("<div style='font-size: 60px;'>🏠</div>", unsafe_allow_html=True)
 
 with col_title:
     st.title("Shack Entertainment")
@@ -170,7 +176,7 @@ with col_left:
     df = pd.DataFrame(data)
     st.dataframe(df, use_container_width=True, hide_index=True)
 
-    st.subheader("📈 Revenue Trend")
+    st.subheader(" Revenue Trend")
     chart_data = pd.DataFrame(
         {'Revenue': [230, 1240, 1470, 1500, 1650]},
         index=['Artists', 'Live', 'News', 'Partnerships', 'Total']
@@ -198,7 +204,7 @@ with col_right:
     if st.button("🧮 Calculate Artist Payouts", use_container_width=True):
         st.info("Calculating...")
 
-    if st.button("🧾 Generate Invoices", use_container_width=True):
+    if st.button(" Generate Invoices", use_container_width=True):
         st.info("Generating...")
 
 # Footer
