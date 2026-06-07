@@ -81,7 +81,7 @@ with st.sidebar:
     st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
     
     # Back to Home button
-    if st.button("🏠 Back to Home", use_container_width=True):
+    if st.button(" Back to Home", use_container_width=True):
         st.switch_page("dashboards/Home.py")
     
     st.markdown("---")
@@ -104,11 +104,12 @@ with st.sidebar:
     if st.button("🧾 Generate Invoices", use_container_width=True):
         st.info("Generating...")
 
-# --- HEADER WITH LOGO IMAGE ---
+# --- HEADER WITH LOGO IMAGE (UPDATED TO shack_trans.png) ---
 col_logo, col_title = st.columns([1, 4])
 
 with col_logo:
-    main_logo_b64 = get_image_as_base64("shack_main.png")
+    # CHANGED: Now uses shack_trans.png
+    main_logo_b64 = get_image_as_base64("shack_trans.png")
     if main_logo_b64:
         st.markdown(f'<img src="data:image/png;base64,{main_logo_b64}" width="80" style="display:block;">', unsafe_allow_html=True)
     else:
