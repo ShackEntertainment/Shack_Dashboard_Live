@@ -2,15 +2,28 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import base64
 
-# Set page config FIRST
+# --- HELPER FUNCTION TO LOAD IMAGES AS BASE64 ---
+def get_image_as_base64(image_name):
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        root_dir = os.path.dirname(script_dir)
+        file_path = os.path.join(root_dir, 'assets', image_name)
+        
+        with open(file_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode('utf-8')
+    except Exception:
+        return None
+
+# Set page config
 st.set_page_config(
     page_title="Shack Entertainment",
     page_icon="🏠",
     layout="wide"
 )
 
-# Custom CSS - FIXED SPACING
+# Custom CSS
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -19,18 +32,16 @@ st.markdown("""
     h2 { color: #ffffff !important; font-weight: 700; }
     h3 { color: #ffffff !important; font-weight: 600; }
     .main { background-color: #0e1117; }
-    
-    /* Reduce space between logo and title */
     .stColumns { align-items: center !important; }
     
     .kpi-card { 
         border: 1px solid #2d323e; 
         border-radius: 12px; 
-        padding: 20px 15px; 
+        padding: 15px 10px; 
         margin-bottom: 10px; 
         text-align: center; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
-        height: 150px !important;
+        height: 145px !important;
         display: flex; 
         flex-direction: column; 
         justify-content: space-between; 
@@ -46,9 +57,9 @@ st.markdown("""
     .kpi-card.cyan { background: linear-gradient(145deg, #1e2626 0%, #141818 100%); border-bottom: 4px solid #06b6d4; }
     .kpi-card.amber { background: linear-gradient(145deg, #26221e 0%, #181614 100%); border-bottom: 4px solid #f59e0b; }
     .kpi-card.purple { background: linear-gradient(145deg, #261e26 0%, #181418 100%); border-bottom: 4px solid #8b5cf6; }
-    .kpi-label { font-size: 0.7em; color: #a0a8c0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0; }
-    .kpi-value { font-size: 1.8em; font-weight: bold; color: #ffffff; margin: 5px 0; text-shadow: 1px 1px 2px #000; }
-    .kpi-delta { font-size: 0.75em; color: #10b981; margin-top: 0; font-weight: 600; }
+    .kpi-label { font-size: 0.65em; color: #a0a8c0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0; }
+    .kpi-value { font-size: 1.6em; font-weight: bold; color: #ffffff; margin: 2px 0; text-shadow: 1px 1px 2px #000; }
+    .kpi-delta { font-size: 0.65em; color: #10b981; margin-top: 0; font-weight: 600; }
     
     div.stButton > button {
         background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%) !important;
@@ -65,18 +76,43 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- HEADER WITH LOGO IMAGE (FIXED) ---
+# --- SIDEBAR ---
+with st.sidebar:
+    st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+    
+    # Back to Home button
+    if st.button("🏠 Back to Home", use_container_width=True):
+        st.switch_page("dashboards/Home.py")
+    
+    st.markdown("---")
+    
+    # Navigation
+    st.markdown("### Shack Entertainment")
+    st.markdown("Quick Actions")
+    
+    if st.button("🔄 Sync Data from Spreadsheet", use_container_width=True):
+        st.cache_data.clear()
+        st.success("Data synced!")
+        st.rerun()
+
+    if st.button("📄 Export Financial Report", use_container_width=True):
+        st.info("Report generation started...")
+
+    if st.button("🧮 Calculate Artist Payouts", use_container_width=True):
+        st.info("Calculating...")
+
+    if st.button("🧾 Generate Invoices", use_container_width=True):
+        st.info("Generating...")
+
+# --- HEADER WITH LOGO IMAGE ---
 col_logo, col_title = st.columns([1, 4])
 
 with col_logo:
-    # Try multiple path approaches
-    try:
-        st.image("assets/shack_main.png", width=80)
-    except:
-        try:
-            st.image("../assets/shack_main.png", width=80)
-        except:
-            st.markdown("<div style='font-size: 60px;'>🏠</div>", unsafe_allow_html=True)
+    main_logo_b64 = get_image_as_base64("shack_main.png")
+    if main_logo_b64:
+        st.markdown(f'<img src="data:image/png;base64,{main_logo_b64}" width="80" style="display:block;">', unsafe_allow_html=True)
+    else:
+        st.markdown("<div style='font-size: 60px;'>🏠</div>", unsafe_allow_html=True)
 
 with col_title:
     st.title("Shack Entertainment")
@@ -84,72 +120,77 @@ with col_title:
 
 st.markdown("---")
 
-# --- EXECUTIVE SUMMARY (KPIs) WITH CORRECT LOGOS ---
+# --- EXECUTIVE SUMMARY (KPIs) ---
 st.subheader(" Executive Summary")
 
 col1, col2, col3, col4, col5 = st.columns(5)
 
+# 1. Artists Unlimited
 with col1:
+    img_b64 = get_image_as_base64("artists_unlimited.png")
+    img_html = f'<img src="data:image/png;base64,{img_b64}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px;">' if img_b64 else '🎨'
     st.markdown(f"""
     <div class="kpi-card green">
-        <div style="margin-bottom: 10px;">
-            <img src="assets/artists_unlimited.png" style="width: 48px; height: 48px; object-fit: contain;">
-        </div>
+        <div>{img_html}</div>
         <div class="kpi-label">ARTISTS UNLIMITED</div>
         <div class="kpi-value">£230.00</div>
         <div class="kpi-delta">↑ +4 sales • 0 artists</div>
     </div>
     """, unsafe_allow_html=True)
 
+# 2. Live Exchange
 with col2:
+    img_b64 = get_image_as_base64("live_exchange.png")
+    img_html = f'<img src="data:image/png;base64,{img_b64}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px;">' if img_b64 else ''
     st.markdown(f"""
     <div class="kpi-card blue">
-        <div style="margin-bottom: 10px;">
-            <img src="assets/live_exchange.png" style="width: 48px; height: 48px; object-fit: contain;">
-        </div>
+        <div>{img_html}</div>
         <div class="kpi-label">LIVE EXCHANGE</div>
         <div class="kpi-value">£1,240.00</div>
         <div class="kpi-delta">↑ +87 tickets • 2 events</div>
     </div>
     """, unsafe_allow_html=True)
 
+# 3. News Network
 with col3:
+    img_b64 = get_image_as_base64("shack_news.png")
+    img_html = f'<img src="data:image/png;base64,{img_b64}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px;">' if img_b64 else '📰'
     st.markdown(f"""
     <div class="kpi-card cyan">
-        <div style="margin-bottom: 10px;">
-            <img src="assets/shack_news.png" style="width: 48px; height: 48px; object-fit: contain;">
-        </div>
+        <div>{img_html}</div>
         <div class="kpi-label">NEWS NETWORK</div>
         <div class="kpi-value">12</div>
         <div class="kpi-delta">↑ 3200 views • 48% growth</div>
     </div>
     """, unsafe_allow_html=True)
 
+# 4. Partnerships
 with col4:
+    img_b64 = get_image_as_base64("shack_light_logo.png")
+    img_html = f'<img src="data:image/png;base64,{img_b64}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px;">' if img_b64 else '🤝'
     st.markdown(f"""
     <div class="kpi-card amber">
-        <div style="margin-bottom: 10px;">
-            <img src="assets/shack_light_logo.png" style="width: 48px; height: 48px; object-fit: contain;">
-        </div>
+        <div>{img_html}</div>
         <div class="kpi-label">PARTNERSHIPS</div>
         <div class="kpi-value">£0</div>
         <div class="kpi-delta">↑ £0/mo • 0 active</div>
     </div>
     """, unsafe_allow_html=True)
 
+# 5. Financial Overview
 with col5:
+    img_b64 = get_image_as_base64("shack_main.png")
+    img_html = f'<img src="data:image/png;base64,{img_b64}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px;">' if img_b64 else '💰'
     st.markdown(f"""
     <div class="kpi-card purple">
-        <div style="margin-bottom: 10px;">
-            <img src="assets/shack_main.png" style="width: 48px; height: 48px; object-fit: contain;">
-        </div>
+        <div>{img_html}</div>
         <div class="kpi-label">FINANCIAL OVERVIEW</div>
         <div class="kpi-value">£1,470.00</div>
         <div class="kpi-delta">↑ £441.00 Shack (30%)</div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- QUICK ACTION BUTTONS ---
+# --- QUICK ACTION BUTTONS (Below KPIs) ---
 st.markdown("<br>", unsafe_allow_html=True)
 col_btn1, col_btn2, col_btn3, col_btn4, col_btn5 = st.columns(5)
 
@@ -158,7 +199,7 @@ with col_btn1:
         st.switch_page("dashboards/pages/1_Artists_Unlimited.py")
 
 with col_btn2:
-    if st.button("🎫 View Live", use_container_width=True):
+    if st.button(" View Live", use_container_width=True):
         st.switch_page("dashboards/pages/2_Live_Exchange.py")
 
 with col_btn3:
@@ -180,7 +221,6 @@ col_left, col_right = st.columns([2, 1])
 
 with col_left:
     st.subheader("📋 Recent Transactions")
-    # Demo data table
     data = {
         'Date': ['06/05/2026 06:43:39', '06/05/2026 23:32:21'],
         'Description': ['Artist Commission', 'Live Event Ticket'],
@@ -202,23 +242,6 @@ with col_right:
     st.warning("**Low Stock:** 1 item(s)\nAlbury Downs")
     
     st.success("**Opportunity:** Feature top artist")
-    
-    st.markdown("---")
-    st.subheader(" Quick Actions")
-    
-    if st.button("🔄 Sync Data from Spreadsheet", use_container_width=True):
-        st.cache_data.clear()
-        st.success("Data synced!")
-        st.rerun()
-
-    if st.button("📄 Export Financial Report", use_container_width=True):
-        st.info("Report generation started...")
-
-    if st.button("🧮 Calculate Artist Payouts", use_container_width=True):
-        st.info("Calculating...")
-
-    if st.button(" Generate Invoices", use_container_width=True):
-        st.info("Generating...")
 
 # Footer
 st.markdown("---")
