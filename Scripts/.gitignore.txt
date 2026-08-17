@@ -50,3 +50,6 @@ Thumbs.db
 # --- LOGS ---
 logs/
 *.log
+   credentials.json
+   executive_cache.db
+   agents_v2/

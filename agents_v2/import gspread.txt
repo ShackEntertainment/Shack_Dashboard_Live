@@ -1,0 +1,96 @@
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
+import sqlite3
+import schedule
+import time
+import os
+import logging
+from datetime import datetime
+
+# --- CONFIGURATION ---
+# REPLACE WITH YOUR ACTUAL SPREADSHEET ID FROM GOOGLE SHEETS URL
+SPREADSHEET_ID = '1nXxNoWAWMLgDUKUEYn7qkcKaxgzEI-sCLaK2hNpzO3A'
+
+SHEET_CONFIG = {
+    'Shack_Live_Exchange_Master': {
+        'tabs': ['01_Events_Master', '02_Ticket_Bookings', '03_Artist_Talent', '04_Revenue_Financials', '05_Operations_Log', '06_Analytics_KPIs', '07_Quarterly_Snapshot'],
+        'prefix': 'le_'
+    },
+    'Artists_Unlimited_Master': {
+        'tabs': ['🎨Artists', 'InventoryData', '🏪 Product Sales Outlets', '💰 Sales', ' Partnerships', '👥 Customers', '📊 Quarterly_Snapshot'],
+        'prefix': 'au_'
+    },
+    'Shack_News_Network_Master': {
+        'tabs': ['01_Content_Library', '02_Youtube_Analytics', '03_Social_Media_Metrics', '04_Referral_Monetization', '05_Campaign_Tracking', '06_Snapshot'],
+        'prefix': 'sn_'
+    },
+    'Shack_Financial_Overview_Master': {
+        'tabs': ['01_Revenue_Streams', '02_Expense_Breakdown', '03_Cash_Flow', '04_Snapshot'],
+        'prefix': 'fin_'
+    },
+    'Shack_Command_Center_Master': {
+        'tabs': ['01_Project_Pipeline', '02_KPI_Tracker', '03_Team_Activity', '04_Snapshot'],
+        'prefix': 'cmd_'
+    }
+}
+
+DB_NAME = 'executive_cache.db'
+CREDENTIALS_FILE = '../configs/service_account.json'
+
+# --- LOGGING ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def get_google_client():
+    try:
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
+        return gspread.authorize(creds)
+    except Exception as e:
+        logging.error(f"Auth failed: {e}")
+        return None
+
+def sync_all_sheets():
+    logging.info("--- STARTING SYNC ---")
+    client = get_google_client()
+    if not client: return
+
+    conn = sqlite3.connect(DB_NAME)
+    
+    for sheet_name, config in SHEET_CONFIG.items():
+        try:
+            spreadsheet = client.open(sheet_name)
+            for tab_name in config['tabs']:
+                try:
+                    worksheet = spreadsheet.worksheet(tab_name)
+                    records = worksheet.get_all_records()
+                    df = pd.DataFrame(records)
+                    
+                    # Clean column names
+                    df.columns = [str(c).strip().replace(' ', '_').replace('(', '').replace(')', '').replace('£', 'GBP') for c in df.columns]
+                    
+                    # Create table name
+                    table_name = f"{config['prefix']}{tab_name.replace(' ', '_').replace('🏪', '').replace('💰', '').replace('🤝', '').replace('', '').replace('🎨', '').replace('📊', '')}"
+                    
+                    # Write to SQLite
+                    df.to_sql(table_name, conn, if_exists='replace', index=False)
+                    logging.info(f"Synced: {sheet_name} -> {tab_name} ({len(df)} rows)")
+                except gspread.exceptions.WorksheetNotFound:
+                    logging.warning(f"Tab not found: {tab_name}")
+        except Exception as e:
+            logging.error(f"Failed to open sheet {sheet_name}: {e}")
+
+    conn.close()
+    logging.info("--- SYNC COMPLETE ---")
+
+def main():
+    logging.info("Data Sync Agent started. Running initial sync...")
+    sync_all_sheets()
+    schedule.every(5).minutes.do(sync_all_sheets)
+    
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+if __name__ == "__main__":
+    main()

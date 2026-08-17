@@ -6,14 +6,18 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from finance_sync import load_finance_data
-
-st.set_page_config(page_title="Financial Overview | Shack Entertainment", page_icon="💰", layout="wide")
+from cache_reader import load_financial_overview_data as load_finance_data
+st.set_page_config(page_title="Financial Overview | Shack Entertainment", page_icon="💰", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    [data-testid="stSidebar"] { background-color: #0e1117; }
+    .main { background-color: #0e1117; }
+    .stApp { background-color: #0e1117 !important; }
+    header { visibility: hidden; }
+    [data-testid="stHeader"] { background-color: #0e1117; padding: 0; }
+    /* [data-testid="stToolbar"] { visibility: hidden; } */
+    [data-testid="stSidebar"] a, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #e2e8f0 !important; }
     h1 { color: #ffffff !important; font-weight: 800; }
     h2, h3 { color: #ffffff !important; }
     .main { background-color: #0e1117; }
@@ -53,20 +57,71 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+
+
+
+
+
+# --- NAVIGATION BAR ---
+
+current = "Finance"  # auto-detected from filename
+cols = st.columns(8)
+for i, (name, path, label) in enumerate([
+    ("Home", r"Home.py", "Home"),
+    ("Artists", r"pages/1_Artists_Unlimited.py", "Artists"),
+    ("Live Exchange", r"pages/2_Live_Exchange.py", "Live Exchange"),
+    ("News Network", r"pages/3_News_Network.py", "News Network"),
+    ("Finance", r"pages/4_Financial_Overview.py", "Finance"),
+    ("Partnerships", r"pages/5_Partnerships.py", "Partnerships"),
+    ("Alerts", r"pages/6_System_Alert.py", "Alerts"),
+    ("Command", r"pages/7_Command_Center.py", "Command"),
+]):
+    with cols[i]:
+        if name == current:
+            st.button(label, disabled=True, use_container_width=True, type="primary")
+        else:
+            if st.button(label, use_container_width=True):
+                st.switch_page(path)
+st.markdown("---")
+
+
 st.title(" Financial Overview")
 st.markdown("*Executive Finance Dashboard* | " + datetime.now().strftime('%d %B %Y'))
 
 # Load Data
-result = load_finance_data()
-if len(result) == 5:
+import contextlib
+result = None
+with contextlib.redirect_stdout(None):
+    try:
+        result = load_finance_data()
+    except Exception as e:
+        result = (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {},
+                  f"Unexpected error: {str(e)}")
+
+if result is None or not isinstance(result, (list, tuple)):
+    revenue_df, expense_df, cashflow_df = (pd.DataFrame(),)*3
+    snapshot_dict = {}
+    error_msg = "Unexpected result format from data sync."
+elif len(result) == 5:
     revenue_df, expense_df, cashflow_df, snapshot_dict, error_msg = result
-    if error_msg:
-        st.warning(f"⚠️ {error_msg}")
 else:
-    revenue_df, expense_df, cashflow_df, snapshot_dict = result
+    revenue_df, expense_df, cashflow_df = (pd.DataFrame(),)*3
+    snapshot_dict = {}
     error_msg = None
 
-def get_snap(key, default="0"):
+# Show connection error if present
+if error_msg:
+    st.warning(f"Sheets connection: {error_msg}")
+
+# Demo data only when ALL sheets are empty
+all_empty = all(
+    (df is None or len(df) == 0)
+    for df in [revenue_df, expense_df, cashflow_df]
+)
+if all_empty and not error_msg:
+    st.info("No Financial Overview data yet — add data to Shack_Financial_Overview_Master spreadsheet.")
+
+def get_snap(key, default="—"):
     return snapshot_dict.get(key, default) if snapshot_dict else default
 
 st.subheader("📊 Financial Summary")
@@ -77,8 +132,8 @@ with col1:
     <div class="kpi-card green">
         <div class="kpi-icon">💷</div>
         <div class="kpi-label">TOTAL REVENUE</div>
-        <div class="kpi-value">£{get_snap('Total_Revenue', '0.00')}</div>
-        <div class="kpi-delta">↑ +12% vs last month</div>
+        <div class="kpi-value">£{get_snap('Total_Revenue', '—')}</div>
+        <div class="kpi-delta">Add data to track</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -87,8 +142,8 @@ with col2:
     <div class="kpi-card red">
         <div class="kpi-icon"></div>
         <div class="kpi-label">TOTAL EXPENSES</div>
-        <div class="kpi-value">£{get_snap('Total_Expenses', '0.00')}</div>
-        <div class="kpi-delta">↑ +5% vs last month</div>
+        <div class="kpi-value">£{get_snap('Total_Expenses', '—').strip()}</div>
+        <div class="kpi-delta">Add data to track</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -97,8 +152,8 @@ with col3:
     <div class="kpi-card blue">
         <div class="kpi-icon"></div>
         <div class="kpi-label">NET PROFIT</div>
-        <div class="kpi-value">£{get_snap('Net_Profit', '0.00')}</div>
-        <div class="kpi-delta">↑ +8% margin</div>
+        <div class="kpi-value">£{get_snap('Net_Profit', '—')}</div>
+        <div class="kpi-delta">Add data to track</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -107,8 +162,8 @@ with col4:
     <div class="kpi-card amber">
         <div class="kpi-icon">🏦</div>
         <div class="kpi-label">CASH RESERVE</div>
-        <div class="kpi-value">£{get_snap('Cash_Reserve', '0.00')}</div>
-        <div class="kpi-delta">{get_snap('Runway_Months', '0')} months runway</div>
+        <div class="kpi-value">£{get_snap('Cash_Reserve', '—')}</div>
+        <div class="kpi-delta">{get_snap('Runway_Months', '—')} months runway</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -116,9 +171,7 @@ st.markdown("---")
 
 with st.sidebar:
     st.header("⚡ Quick Actions")
-    if st.button("🏠 Back to Home", use_container_width=True):
-        st.switch_page("Home.py")
-    st.divider()
+
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.success("✅ Data refreshed!")
@@ -130,21 +183,21 @@ tab_rev, tab_exp, tab_cash = st.tabs(["💷 Revenue Streams", "💸 Expense Brea
 
 with tab_rev:
     st.subheader("💷 Revenue Streams")
-    if not revenue_df.empty:
+    if revenue_df is not None and not revenue_df.empty:
         st.dataframe(revenue_df, use_container_width=True)
     else:
         st.info("No revenue data available yet.")
 
 with tab_exp:
     st.subheader("💸 Expense Breakdown")
-    if not expense_df.empty:
+    if expense_df is not None and not expense_df.empty:
         st.dataframe(expense_df, use_container_width=True)
     else:
         st.info("No expense data available yet.")
 
 with tab_cash:
     st.subheader("🌊 Cash Flow")
-    if not cashflow_df.empty:
+    if cashflow_df is not None and not cashflow_df.empty:
         st.dataframe(cashflow_df, use_container_width=True)
     else:
         st.info("No cash flow data available yet.")

@@ -22,12 +22,18 @@ def get_base64_image_safe(filename):
     except: pass
     return None
 
-logo_b64 = get_base64_image_safe('shack_main.png')
+logo_b64 = get_base64_image_safe('shack_trans.png')
 
 # --- PREMIUM CSS ---
 st.markdown("""
     <style>
+    [data-testid="stSidebar"] { background-color: #0e1117; }
     .main { background-color: #0e1117; color: #ffffff; }
+    .stApp { background-color: #0e1117 !important; }
+    header { visibility: hidden; }
+    [data-testid="stHeader"] { background-color: #0e1117; padding: 0; }
+    /* [data-testid="stToolbar"] { visibility: hidden; } */
+    [data-testid="stSidebar"] a, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #e2e8f0 !important; }
     .kpi-card { border: 1px solid #2d323e; border-radius: 12px; padding: 15px; margin-bottom: 10px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
     .kpi-card.green { background: linear-gradient(145deg, #1e261e 0%, #141814 100%); border-bottom: 4px solid #4CAF50; }
     .kpi-card.red { background: linear-gradient(145deg, #261e1e 0%, #181414 100%); border-bottom: 4px solid #F44336; }
@@ -45,6 +51,34 @@ st.markdown("""
     footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
+
+
+
+
+
+
+# --- NAVIGATION BAR ---
+
+current = "Alerts"  # auto-detected from filename
+cols = st.columns(8)
+for i, (name, path, label) in enumerate([
+    ("Home", r"Home.py", "Home"),
+    ("Artists", r"pages/1_Artists_Unlimited.py", "Artists"),
+    ("Live Exchange", r"pages/2_Live_Exchange.py", "Live Exchange"),
+    ("News Network", r"pages/3_News_Network.py", "News Network"),
+    ("Finance", r"pages/4_Financial_Overview.py", "Finance"),
+    ("Partnerships", r"pages/5_Partnerships.py", "Partnerships"),
+    ("Alerts", r"pages/6_System_Alert.py", "Alerts"),
+    ("Command", r"pages/7_Command_Center.py", "Command"),
+]):
+    with cols[i]:
+        if name == current:
+            st.button(label, disabled=True, use_container_width=True, type="primary")
+        else:
+            if st.button(label, use_container_width=True):
+                st.switch_page(path)
+st.markdown("---")
+
 
 # --- SYSTEM DATA GENERATORS ---
 @st.cache_data
@@ -149,10 +183,6 @@ with st.sidebar:
     
     if st.button("⚙️ System Settings", use_container_width=True):
         st.info("⚙️ **Settings:** Opening configuration panel...")
-    
-    st.markdown("---")
-    if st.button("🏠 Back to Home", use_container_width=True):
-        st.switch_page("Home.py")
     
     st.markdown("---")
     st.caption("© 2026 Shack Entertainment | SYSTEM MONITORING ACTIVE")

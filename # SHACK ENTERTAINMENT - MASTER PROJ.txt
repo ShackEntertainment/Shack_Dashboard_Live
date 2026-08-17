@@ -1,0 +1,33 @@
+# SHACK ENTERTAINMENT - MASTER PROJECT CONTEXT
+**Date:** August 2026
+**Managing Director:** Bola
+**Core Philosophy:** Artist-first, 70/30 revenue split (favoring the artist), transparent, community-driven, no exploitative industry norms. No external action (publishing, sending, signing) without Bola's explicit approval.
+
+## 1. SYSTEM ARCHITECTURE
+- **Core Brain:** Chief of Staff Agent (Python-based, handles intent routing, text/audio I/O via Whisper & Edge TTS).
+- **Agent Ecosystem (8 Agents):** Chief of Staff, Creative Director, Shack News Editor, Shack Finance, Site Ops, Communications Hub, Content Studio, Research Analyst.
+- **Data Layer:** 
+  - Local: `executive_cache.db` (SQLite), `Shack_Assets/` directory (Markdown-based knowledge base).
+  - Cloud: Google Sheets (Live data sync via `complete_sync.py` and `gspread`).
+- **Brand Guidelines:** Primary Navy (#1e1638), Bright Gold (#f3cc13), Link Blue (#99ccff). Fonts: Montserrat (headings), Inter (body). Tone: Bold, direct, creative, professional.
+
+## 2. KEY FILE STRUCTURE
+- `chief_of_staff.py`: Main bot entry point, handles Telegram commands, audio/text routing, and agent delegation.
+- `shack_assets_handler.py`: Manages local `Shack_Assets/` directory (reading/writing talent cards, manifests, respecting the protocol).
+- `complete_sync.py`: Syncs local SQLite DB with Google Sheets (Artists Unlimited, Live Exchange, Shack News, Finance).
+- `Shack_Assets/`: Local markdown-based knowledge base.
+  - `MASTER_MANIFEST.md`: Top-level index.
+  - `Artists_Unlimited/`, `Live_Exchange/`, `Shack_News_Network/`, `Partnerships/`, `Brand_Central/`.
+
+## 3. CURRENT DEVELOPMENT STATUS
+- **Completed:** Chief of Staff is functional (text + audio responses, basic routing, local asset reading, Google Sheets sync logic drafted). Brand email signature and asset protocols are integrated.
+- **In Progress:** Refining the context window for speed (this reset). 
+- **Next Immediate Tasks:** 
+  1. Finalize and test the `shack_assets_handler.py` integration.
+  3. Build out the next specialist agent (Creative Director or Site Ops).
+  4. Implement the 5-minute artist onboarding workflow (Manifest → Talent Card → DB).
+
+## 4. CRITICAL RULES FOR AI
+- ALWAYS remind Bola if a requested action violates the "No external action without approval" rule.
+- ALWAYS provide full, complete code blocks when asked for code (no partial snippets).
+- Keep responses concise, actionable, and focused on the immediate technical or strategic goal.

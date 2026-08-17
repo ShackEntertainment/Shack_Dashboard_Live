@@ -26,12 +26,26 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     h1 { color: #ffffff !important; font-weight: 800; margin-top: -20px !important; }
     h2 { color: #ffffff !important; font-weight: 700; }
     h3 { color: #ffffff !important; font-weight: 600; }
     .main { background-color: #0e1117; }
+    [data-testid="stSidebar"] { background-color: #0e1117 !important; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; }
+    .stApp { background-color: #0e1117 !important; }
+    /* Hide the white Streamlit header bar */
+    header { visibility: hidden; }
+    [data-testid="stHeader"] { background-color: #0e1117; padding: 0; }
+    /* [data-testid="stToolbar"] { visibility: hidden; } */
+    /* Sidebar nav text — ensure white and readable */
+    [data-testid="stSidebar"] a, [data-testid="stSidebar"] div[class*="nav"], [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #e2e8f0 !important; }
+    [data-testid="stSidebar"] a:hover, [data-testid="stSidebar"] div:hover { color: #60a5fa !important; }
+        /* === TEXT VISIBILITY FIX === */
+        p, span, div { color: #d8dce8 !important; }
+        em, i { color: #b8c0d0 !important; }
+        .stMarkdown p { color: #c8d0e0 !important; }
+        /* === END TEXT VISIBILITY FIX === */
     .stColumns { align-items: center !important; }
     
     .kpi-card { 
@@ -76,17 +90,39 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+
+
+
+
+
+# --- NAVIGATION BAR ---
+
+current = "Home"  # auto-detected from filename
+cols = st.columns(8)
+for i, (name, path, label) in enumerate([
+    ("Home", r"Home.py", "Home"),
+    ("Artists", r"pages/1_Artists_Unlimited.py", "Artists"),
+    ("Live Exchange", r"pages/2_Live_Exchange.py", "Live Exchange"),
+    ("News Network", r"pages/3_News_Network.py", "News Network"),
+    ("Finance", r"pages/4_Financial_Overview.py", "Finance"),
+    ("Partnerships", r"pages/5_Partnerships.py", "Partnerships"),
+    ("Alerts", r"pages/6_System_Alert.py", "Alerts"),
+    ("Command", r"pages/7_Command_Center.py", "Command"),
+]):
+    with cols[i]:
+        if name == current:
+            st.button(label, disabled=True, use_container_width=True, type="primary")
+        else:
+            if st.button(label, use_container_width=True):
+                st.switch_page(path)
+st.markdown("---")
+
+
 # --- SIDEBAR ---
 with st.sidebar:
     st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
     
-    # Back to Home button
-    if st.button(" Back to Home", use_container_width=True):
-        st.switch_page("dashboards/Home.py")
-    
-    st.markdown("---")
-    
-    # Navigation
+    # Quick Actions
     st.markdown("### Shack Entertainment")
     st.markdown("Quick Actions")
     
@@ -128,7 +164,7 @@ col1, col2, col3, col4, col5 = st.columns(5)
 
 # 1. Artists Unlimited
 with col1:
-    img_b64 = get_image_as_base64("artists_unlimited.png")
+    img_b64 = get_image_as_base64("artists_unlimited_trans.png")
     img_html = f'<img src="data:image/png;base64,{img_b64}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px;">' if img_b64 else '🎨'
     st.markdown(f"""
     <div class="kpi-card green">
@@ -141,7 +177,7 @@ with col1:
 
 # 2. Live Exchange
 with col2:
-    img_b64 = get_image_as_base64("live_exchange.png")
+    img_b64 = get_image_as_base64("live_exchange_trans.png")
     img_html = f'<img src="data:image/png;base64,{img_b64}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px;">' if img_b64 else ''
     st.markdown(f"""
     <div class="kpi-card blue">
@@ -154,7 +190,7 @@ with col2:
 
 # 3. News Network
 with col3:
-    img_b64 = get_image_as_base64("shack_news.png")
+    img_b64 = get_image_as_base64("shack_news_trans.png")
     img_html = f'<img src="data:image/png;base64,{img_b64}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px;">' if img_b64 else '📰'
     st.markdown(f"""
     <div class="kpi-card cyan">
@@ -232,10 +268,10 @@ with col_left:
 
     st.subheader(" Revenue Trend")
     chart_data = pd.DataFrame(
-        {'Revenue': [230, 1240, 1470, 1500, 1650]},
-        index=['Artists', 'Live', 'News', 'Partnerships', 'Total']
+        {'Arm': ['Artists', 'Live', 'News', 'Partnerships', 'Total'],
+         'Revenue': [230, 1240, 1470, 1500, 1650]}
     )
-    st.line_chart(chart_data)
+    st.dataframe(chart_data, use_container_width=True, hide_index=True)
 
 with col_right:
     st.subheader(" Alerts & Actions")

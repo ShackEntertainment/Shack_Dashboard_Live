@@ -1,57 +1,28 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
-venv/
-ENV/
-env/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Secrets & Credentials (CRITICAL)
-*.json
-!package.json
-.env
-.env.local
-*.pem
-*.key
-shack_credentials.json
-shack-agent-*.json
-
-# Streamlit
+# secrets — never leave this machine
+configs/.env
+configs/service_account.json
+configs/token.json
+configs/credentials.json
+configs/last_chat.txt
+configs/code_verifier.txt
 .streamlit/secrets.toml
+dashboards/test_secrets.py
 
-# Logs
+# runtime
+__pycache__/
+*.pyc
+*.pyo
+logs/
 *.log
+executive_cache.db
+Mail_Drafts/
 
-# Temporary files
-*.tmp
-temp/
+# os
+Thumbs.db
+desktop.ini
+# legacy dev scripts with hardcoded creds — local only
+Scripts/_exchange_token.py
+Scripts/test_sheets.py
+
+# binaries
+*.exe

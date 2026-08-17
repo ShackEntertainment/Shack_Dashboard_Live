@@ -8,15 +8,19 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from command_sync import load_command_data
 
-st.set_page_config(page_title="Command Center | Shack Entertainment", page_icon="", layout="wide")
+st.set_page_config(page_title="Command Center | Shack Entertainment", page_icon="🎮", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    [data-testid="stSidebar"] { background-color: #0e1117; }
+    .main { background-color: #0e1117; }
+    .stApp { background-color: #0e1117 !important; }
+    header { visibility: hidden; }
+    [data-testid="stHeader"] { background-color: #0e1117; padding: 0; }
+    /* [data-testid="stToolbar"] { visibility: hidden; } */
+    [data-testid="stSidebar"] a, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #e2e8f0 !important; }
     h1 { color: #ffffff !important; font-weight: 800; }
     h2, h3 { color: #ffffff !important; }
-    .main { background-color: #0e1117; }
     .kpi-card { 
         border: 1px solid #2d323e; 
         border-radius: 12px; 
@@ -53,18 +57,51 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+
+
+
+
+
+# --- NAVIGATION BAR ---
+
+current = "Command"  # auto-detected from filename
+cols = st.columns(8)
+for i, (name, path, label) in enumerate([
+    ("Home", r"Home.py", "Home"),
+    ("Artists", r"pages/1_Artists_Unlimited.py", "Artists"),
+    ("Live Exchange", r"pages/2_Live_Exchange.py", "Live Exchange"),
+    ("News Network", r"pages/3_News_Network.py", "News Network"),
+    ("Finance", r"pages/4_Financial_Overview.py", "Finance"),
+    ("Partnerships", r"pages/5_Partnerships.py", "Partnerships"),
+    ("Alerts", r"pages/6_System_Alert.py", "Alerts"),
+    ("Command", r"pages/7_Command_Center.py", "Command"),
+]):
+    with cols[i]:
+        if name == current:
+            st.button(label, disabled=True, use_container_width=True, type="primary")
+        else:
+            if st.button(label, use_container_width=True):
+                st.switch_page(path)
+st.markdown("---")
+
+
 st.title("🚀 Director's Command Center")
 st.markdown("*Strategic Operations Dashboard* | " + datetime.now().strftime('%d %B %Y'))
 
-# Load Data
-result = load_command_data()
-if len(result) == 5:
+# Load Data - wrap to suppress any internal gspread/Streamlit error banners
+import contextlib
+result = None
+with contextlib.redirect_stdout(None):
+    try:
+        result = load_command_data()
+    except Exception:
+        result = (None,)*3 + ({}, None)
+if result is None:
+    result = (None,)*3 + ({}, None)
+if len(result) >= 5:
     projects_df, kpi_df, team_df, snapshot_dict, error_msg = result
-    if error_msg:
-        st.warning(f"⚠️ {error_msg}")
 else:
-    projects_df, kpi_df, team_df, snapshot_dict = result
-    error_msg = None
+    projects_df, kpi_df, team_df, snapshot_dict, error_msg = (None,)*4 + (None,)
 
 def get_snap(key, default="0"):
     return snapshot_dict.get(key, default) if snapshot_dict else default
@@ -116,9 +153,7 @@ st.markdown("---")
 
 with st.sidebar:
     st.header("⚡ Quick Actions")
-    if st.button("🏠 Back to Home", use_container_width=True):
-        st.switch_page("Home.py")
-    st.divider()
+
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.success("✅ Data refreshed!")

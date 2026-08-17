@@ -1,0 +1,26 @@
+UMBRELLA — Shack Entertainment
+  site: shackentertainment.co.uk
+  YT: @shackentertainment-live-arts
+  mail: info@shackentertainment.co.uk / bola@shackentertainment.co.uk / amit@shackentertainment.co.uk / leo@shackentertainment.co.uk
+  assets: Shack_Assets\Brand_Central (logos, guidelines, boilerplates)
+  IG https://www.instagram.com/shackentertainment/ | TikTok https://www.tiktok.com/@shackentertainment | X https://x.com/ShackEnt | facebook https://www.facebook.com/ShackEntertainmentLiveArts/ | Bluesky https://bsky.app/profile/shackentertainment.bsky.social
+
+DIV — The Live Exchange (live talent: bands, solo, performers, speakers, comedy)
+  site: theliveexchange.co.uk
+  YT: @theliveexchange
+  mail info@shackentertainment.co.uk | IG https://www.instagram.com/theliveexchange_london/ | TikTok https://www.tiktok.com/@the.live.exchange | X https://x.com/The_Live_Ex | facebook https://www.facebook.com/profile.php?id=61557270674084 | Bluesky https://bsky.app/profile/theliveexchange.bsky.social 
+
+DIV — Artists Unlimited (visual arts)
+  mail: a-r@
+  roster: Paul Duncan — Painter, Hyper Realism (Active)
+  site ? | IG https://www.instagram.com/theliveexchange_london/ | TikTok https://www.tiktok.com/@artists.unlimited | X https://x.com/ShackEntGallery | facebook https://www.facebook.com/profile.php?id=61590626234504 | Bluesky https://bsky.app/profile/artistsunlimited.bsky.social
+
+DIV — Shack News Network (editorial: op-eds, guest writers, citizen journalists, investigations)
+  X: https://x.com/shacknewsnetwork
+  site ? | IG https://www.instagram.com/shack_news_network/ | TikTok https://www.tiktok.com/@shack.news.networ | X https://x.com/ShackNewsNet | facebook ? | Bluesky https://bsky.app/profile/shacknewsnetwork.bsky.social
+
+DIV — Partnerships
+  mail: b2b@
+  active: Pullingers Art Supplies
+
+BUFFER: yes / no Yes

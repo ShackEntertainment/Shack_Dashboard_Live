@@ -6,18 +6,24 @@ import sys
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from data_sync import load_live_exchange_data
+from cache_reader import load_live_exchange_data
 
-st.set_page_config(page_title="Live Exchange | Shack", page_icon="🎫", layout="wide")
+st.set_page_config(page_title="Live Exchange | Shack", page_icon="🎫", layout="wide", initial_sidebar_state="expanded")
 
 # Hide default Streamlit elements and force dark theme
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
+    [data-testid="stSidebar"] { background-color: #0e1117; }
     footer {visibility: hidden;}
     h1 { color: #ffffff !important; font-weight: 800; text-shadow: 2px 2px 4px #000000; }
     h2, h3 { color: #ffffff !important; }
     .main { background-color: #0e1117; }
+    [data-testid="stSidebar"] { background-color: #0e1117 !important; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; }
+    .stApp { background-color: #0e1117 !important; }
+    header { visibility: hidden; }
+    [data-testid="stHeader"] { background-color: #0e1117; padding: 0; }
+    /* [data-testid="stToolbar"] { visibility: hidden; } */
     .kpi-card { border: 1px solid #2d323e; border-radius: 12px; padding: 15px; margin-bottom: 10px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
     .kpi-card.green { background: linear-gradient(145deg, #1e261e 0%, #141814 100%); border-bottom: 4px solid #4CAF50; }
     .kpi-card.red { background: linear-gradient(145deg, #261e1e 0%, #181414 100%); border-bottom: 4px solid #F44336; }
@@ -31,6 +37,34 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+
+
+
+
+
+# --- NAVIGATION BAR ---
+
+current = "Live Exchange"  # auto-detected from filename
+cols = st.columns(8)
+for i, (name, path, label) in enumerate([
+    ("Home", r"Home.py", "Home"),
+    ("Artists", r"pages/1_Artists_Unlimited.py", "Artists"),
+    ("Live Exchange", r"pages/2_Live_Exchange.py", "Live Exchange"),
+    ("News Network", r"pages/3_News_Network.py", "News Network"),
+    ("Finance", r"pages/4_Financial_Overview.py", "Finance"),
+    ("Partnerships", r"pages/5_Partnerships.py", "Partnerships"),
+    ("Alerts", r"pages/6_System_Alert.py", "Alerts"),
+    ("Command", r"pages/7_Command_Center.py", "Command"),
+]):
+    with cols[i]:
+        if name == current:
+            st.button(label, disabled=True, use_container_width=True, type="primary")
+        else:
+            if st.button(label, use_container_width=True):
+                st.switch_page(path)
+st.markdown("---")
+
+
 # --- HEADER ---
 st.title("🎫 Live Exchange")
 st.markdown("*Event Management & Ticketing Dashboard* | " + datetime.now().strftime('%d %B %Y'))
@@ -41,18 +75,34 @@ st.markdown("---")
 def get_data():
     return load_live_exchange_data()
 
-result = get_data()
+import contextlib
+result = None
+with contextlib.redirect_stdout(None):
+    try:
+        result = get_data()
+    except Exception:
+        result = (None,)*6 + ({}, None)
+if result is None:
+    result = (None,)*6 + ({}, None)
 if len(result) == 7:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict, error_msg = result
-    if error_msg:
-        st.warning(f"⚠️ {error_msg}")
 else:
     events_df, bookings_df, artists_df, financials_df, ops_df, snapshot_dict = result
     error_msg = None
 
-# Demo data for display when connection fails
-if events_df is None or len(events_df) == 0:
-    st.info("ℹ️ Showing demo data - connect Google Sheets for live data")
+# Show error if connection failed
+if error_msg:
+    st.warning(f"Sheets connection issue: {error_msg}")
+
+# Demo data only as absolute last fallback — only when ALL sheets are empty and no error
+all_empty = (
+    (events_df is None or len(events_df) == 0) and
+    (bookings_df is None or len(bookings_df) == 0) and
+    (financials_df is None or len(financials_df) == 0) and
+    (artists_df is None or len(artists_df) == 0)
+)
+if all_empty and not error_msg:
+    st.info("No live data yet — add events, bookings, or financial records to Shack_Live_Exchange_Master")
     events_df = pd.DataFrame({
         'Event_Name': ['Summer Rooftop Jam', 'Underground Bass Night', 'Jazz & Canvas Gala', 'Neon Folk Session'],
         'Event_Date': ['2026-06-15', '2026-06-22', '2026-07-05', '2026-07-12'],
@@ -60,8 +110,6 @@ if events_df is None or len(events_df) == 0:
         'Capacity_Total': [150, 80, 200, 40],
         'Capacity_Remaining': [150, 80, 200, 40]
     })
-    
-if bookings_df is None or len(bookings_df) == 0:
     bookings_df = pd.DataFrame({
         'Booking_ID': ['BK001', 'BK002', 'BK003', 'BK004', 'BK005', 'BK006'],
         'Event_ID': [1, 1, 2, 3, 3, 4],
@@ -71,8 +119,6 @@ if bookings_df is None or len(bookings_df) == 0:
         'Total_Price': [50.00, 75.00, 80.00, 30.00, 150.00, 75.00],
         'Payment_Status': ['Paid', 'Paid', 'Pending', 'Paid', 'Paid', 'Pending']
     })
-    
-if financials_df is None or len(financials_df) == 0:
     financials_df = pd.DataFrame({
         'Transaction_ID': ['TXN001', 'TXN002', 'TXN003', 'TXN004', 'TXN005'],
         'Date': ['2026-05-01', '2026-05-05', '2026-05-10', '2026-05-15', '2026-05-20'],
@@ -82,11 +128,6 @@ if financials_df is None or len(financials_df) == 0:
         'Amount_Out': [0.00, 200.00, 500.00, 150.00, 300.00],
         'Event_Link': ['Summer Rooftop Jam', 'Summer Rooftop Jam', 'Summer Rooftop Jam', 'General', 'General']
     })
-
-# Handle case where data loading fails completely
-if events_df is None and bookings_df is None:
-    st.error("❌ Failed to load any data.")
-    st.stop()
 
 # --- CALCULATE METRICS ---
 total_events = len(events_df) if events_df is not None else 0
@@ -108,10 +149,6 @@ if bookings_df is not None and 'Quantity' in bookings_df.columns:
     tickets_sold = int(pd.to_numeric(bookings_df['Quantity'], errors='coerce').fillna(0).sum())
 
 # --- SIDEBAR ---
-with st.sidebar:
-    # 1. Back to Home (Top)
-    if st.button("🏠 Back to Home", use_container_width=True, type="primary"):
-        st.switch_page("Home.py")  # FIXED PATH
     
     st.markdown("---")
     

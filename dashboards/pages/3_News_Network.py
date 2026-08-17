@@ -7,20 +7,25 @@ import sys
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from news_sync import load_news_data
-
+from cache_reader import load_news_network_data as load_news_data
 # Set page config
 st.set_page_config(
     page_title="Shack News Network | Shack Entertainment",
-    page_icon="",
-    layout="wide"
+    page_icon="📰",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Custom CSS for Dark Theme, Blue Buttons, and Uniform KPI Sizing
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    [data-testid="stSidebar"] { background-color: #0e1117; }
+    .main { background-color: #0e1117; }
+    .stApp { background-color: #0e1117 !important; }
+    header { visibility: hidden; }
+    [data-testid="stHeader"] { background-color: #0e1117; padding: 0; }
+    /* [data-testid="stToolbar"] { visibility: hidden; } */
+    [data-testid="stSidebar"] a, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #e2e8f0 !important; }
     h1 { color: #ffffff !important; font-weight: 800; }
     h2, h3 { color: #ffffff !important; }
     .main { background-color: #0e1117; }
@@ -64,19 +69,71 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+
+
+
+
+
+# --- NAVIGATION BAR ---
+
+current = "News Network"  # auto-detected from filename
+cols = st.columns(8)
+for i, (name, path, label) in enumerate([
+    ("Home", r"Home.py", "Home"),
+    ("Artists", r"pages/1_Artists_Unlimited.py", "Artists"),
+    ("Live Exchange", r"pages/2_Live_Exchange.py", "Live Exchange"),
+    ("News Network", r"pages/3_News_Network.py", "News Network"),
+    ("Finance", r"pages/4_Financial_Overview.py", "Finance"),
+    ("Partnerships", r"pages/5_Partnerships.py", "Partnerships"),
+    ("Alerts", r"pages/6_System_Alert.py", "Alerts"),
+    ("Command", r"pages/7_Command_Center.py", "Command"),
+]):
+    with cols[i]:
+        if name == current:
+            st.button(label, disabled=True, use_container_width=True, type="primary")
+        else:
+            if st.button(label, use_container_width=True):
+                st.switch_page(path)
+st.markdown("---")
+
+
 # Header
 st.title("📰 Shack News Network")
 st.markdown("*Director's Analytics Dashboard* | " + datetime.now().strftime('%d %B %Y'))
 
 # Load Data
-result = load_news_data()
-if len(result) == 7:
+import contextlib
+result = None
+with contextlib.redirect_stdout(None):
+    try:
+        result = load_news_data()
+    except Exception as e:
+        result = (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(),
+                 pd.DataFrame(), pd.DataFrame(), {},
+                 f"Unexpected error: {str(e)}")
+
+if result is None or not isinstance(result, (list, tuple)):
+    content_df, youtube_df, social_df, referral_df, campaign_df = (pd.DataFrame(),)*5
+    snapshot_dict = {}
+    error_msg = "Unexpected result format from data sync."
+elif len(result) == 7:
     content_df, youtube_df, social_df, referral_df, campaign_df, snapshot_dict, error_msg = result
-    if error_msg:
-        st.warning(f"⚠️ {error_msg}")
 else:
-    content_df, youtube_df, social_df, referral_df, campaign_df, snapshot_dict = result
+    content_df, youtube_df, social_df, referral_df, campaign_df = (pd.DataFrame(),)*5
+    snapshot_dict = {}
     error_msg = None
+
+# Show connection error if present
+if error_msg:
+    st.warning(f"Sheets connection: {error_msg}")
+
+# Demo data only when ALL sheets are empty
+all_empty = all(
+    (df is None or len(df) == 0)
+    for df in [content_df, youtube_df, social_df, referral_df, campaign_df]
+)
+if all_empty and not error_msg:
+    st.info("No News Network data yet — add data to Shack_News_Network_Master spreadsheet.")
 
 # Helper to safely get snapshot values
 def get_snap(key, default="0"):
@@ -92,8 +149,8 @@ with col1:
     <div class="kpi-card cyan">
         <div style="font-size: 35px; margin-bottom: 8px;">🌐</div>
         <div class="kpi-label">TOTAL REACH</div>
-        <div class="kpi-value">{get_snap('Total_Reach', '156,477')}</div>
-        <div class="kpi-delta">↑ +12% this week</div>
+        <div class="kpi-value">{get_snap('Total_Reach', '—')}</div>
+        <div class="kpi-delta">Add data to track</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -102,8 +159,8 @@ with col2:
     <div class="kpi-card green">
         <div style="font-size: 35px; margin-bottom: 8px;">🔗</div>
         <div class="kpi-label">SOCIAL SHARES</div>
-        <div class="kpi-value">{get_snap('Total_Social_Shares', '9,117')}</div>
-        <div class="kpi-delta">↑ +8% this week</div>
+        <div class="kpi-value">{get_snap('Total_Social_Shares', '—')}</div>
+        <div class="kpi-delta">Add data to track</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -112,8 +169,8 @@ with col3:
     <div class="kpi-card amber">
         <div style="font-size: 35px; margin-bottom: 8px;"></div>
         <div class="kpi-label">REFERRAL SALES</div>
-        <div class="kpi-value">£{get_snap('Referral_Sales', '2,262.49')}</div>
-        <div class="kpi-delta">↑ +15% this week</div>
+        <div class="kpi-value">£{get_snap('Referral_Sales', '—')}</div>
+        <div class="kpi-delta">Add data to track</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -122,8 +179,8 @@ with col4:
     <div class="kpi-card purple">
         <div style="font-size: 35px; margin-bottom: 8px;">📊</div>
         <div class="kpi-label">AVG ENGAGEMENT</div>
-        <div class="kpi-value">{get_snap('Avg_Engagement_Rate', '7.4%')}</div>
-        <div class="kpi-delta">↑ +2.1% this week</div>
+        <div class="kpi-value">{get_snap('Avg_Engagement_Rate', '—')}</div>
+        <div class="kpi-delta">Add data to track</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -133,10 +190,6 @@ st.markdown("---")
 with st.sidebar:
     st.header("⚡ Quick Actions")
     
-    if st.button("🏠 Back to Home", use_container_width=True):
-        st.switch_page("Home.py")
-    
-    st.divider()
     
     if st.button("🔄 Sync All Platforms", use_container_width=True):
         st.cache_data.clear()
@@ -161,36 +214,39 @@ with tab_overview:
     st.subheader(" YouTube Channel")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Total Views", get_snap('YouTube_Views', '14,214'), "+450 this week")
+        st.metric("Total Views", get_snap('YouTube_Views', '—'), "Add data to track")
     with col2:
-        st.metric("Total Subscribers", get_snap('Total_Followers', '5,199'), "+85 this week")
+        st.metric("Total Subscribers", get_snap('Total_Followers', '—'), "Add data to track")
     
     st.divider()
     
     st.subheader("📱 Social Followers")
-    if not social_df.empty:
-        platform_counts = social_df.groupby('Platform')['Followers'].max()
-        st.bar_chart(platform_counts)
+    if social_df is not None and not social_df.empty:
+        try:
+            platform_counts = social_df.groupby('Platform')['Followers'].max()
+            st.bar_chart(platform_counts)
+        except Exception:
+            st.info("Social data loaded — chart requires Platform and Followers columns.")
     else:
         st.info("No social data available yet.")
 
 with tab_youtube:
     st.subheader("📺 YouTube Performance")
-    if not youtube_df.empty:
+    if youtube_df is not None and not youtube_df.empty:
         st.dataframe(youtube_df, use_container_width=True)
     else:
         st.info("No YouTube data available yet.")
 
 with tab_social:
     st.subheader("📱 Social Media Metrics")
-    if not social_df.empty:
+    if social_df is not None and not social_df.empty:
         st.dataframe(social_df, use_container_width=True)
     else:
         st.info("No social media data available yet.")
 
 with tab_content:
     st.subheader("📚 Content Library")
-    if not content_df.empty:
+    if content_df is not None and not content_df.empty:
         st.dataframe(content_df, use_container_width=True)
     else:
         st.info("No content library data available yet.")
