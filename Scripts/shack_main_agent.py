@@ -14,6 +14,7 @@ import shack_intake as si
 import shack_mail_bridge as mb
 import shack_calendar as scl
 import shack_ledger as slg
+import shack_social as soc
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
@@ -575,5 +576,6 @@ if __name__ == '__main__':
     for _row in AGENTS:
         app.add_handler(CommandHandler(_row[0], _make_agent(*_row[1:])))
 
+    soc.add_handlers(app)
     print("Bot started...")
     app.run_polling()
