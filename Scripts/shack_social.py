@@ -6,6 +6,7 @@ QUEUE (addToQueue), never immediate; Buffer UI stays the 2nd checkpoint.
 """
 import os
 import json
+import asyncio
 from datetime import datetime
 from telegram import Update
 from telegram.ext import CommandHandler
@@ -113,16 +114,23 @@ async def send(update, context):
         for c in chans:
             q = ('mutation { createPost(input: { text: ' + json.dumps(text) +
                  ', channelId: ' + json.dumps(c['id']) +
-                 ', schedulingType: automatic, mode: addToQueue ) '
+                 ', schedulingType: automatic, mode: addToQueue }) '
                  '{ ... on PostActionSuccess { post { id dueAt } } '
                  '... on MutationError { message } } }')
-            r = await _gql(q)
-            cp = ((r.get('data') or {}).get('createPost')) or {}
-            if cp.get('post'):
-                done.append(c['service'] + ' queued')
-            else:
-                done.append(c['service'] + ' FAILED: ' +
-                            str(cp.get('message') or r.get('errors')))
+            try:
+                r = await _gql(q)
+                cp = ((r.get('data') or {}).get('createPost')) or {}
+                if cp.get('post'):
+                    done.append(c['name'] + ' queued')
+                else:
+                    done.append(c['name'] + ' FAILED: ' +
+                                str(cp.get('message') or r.get('errors')))
+            except Exception as e:
+                body = ''
+                if hasattr(e, 'response') and e.response is not None:
+                    body = e.response.text[:150]
+                done.append(c['name'] + ' FAILED: ' + type(e).__name__ + ' ' + body)
+            await asyncio.sleep(2)
         os.rename(os.path.join(social_dir, match[0]),
                   os.path.join(social_dir, match[0].replace('PENDING_', 'QUEUED_')))
         await update.message.reply_text("✅ " + ' | '.join(done) +

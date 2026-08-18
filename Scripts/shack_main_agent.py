@@ -24,6 +24,7 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
 CREDENTIALS = os.path.join(project_root, 'configs', 'service_account.json')
 REGISTRY = os.path.join(project_root, 'configs', 'shack_registry.txt')
+DESIGN_BRIEF = os.path.join(project_root, 'configs', 'design_brief.txt')
 
 ANYTHINGLLM_URL = os.getenv('ANYTHINGLLM_URL', 'http://localhost:3001')
 ANYTHINGLLM_KEY = os.getenv('ANYTHINGLLM_API_KEY', '')

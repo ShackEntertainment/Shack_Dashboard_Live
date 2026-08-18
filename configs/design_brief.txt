@@ -1,0 +1,46 @@
+SHACK DESIGN BRIEF — ground truth for the Design Agent
+================================================================
+
+BRANDS
+Shack Entertainment (umbrella) | The Live Exchange | Artists Unlimited | Shack News Network
+
+COLOUR PALETTE (hex — usage)
+Primary Navy   #1e1638 — primary background
+Bright Gold    #f3cc13 — primary accent
+Warm Gold      #cca739 — decorative only
+Link Blue      #99ccff — hyperlinks
+Warm Tan       #d8a456 — optional warm accent
+Dark Navy      #000030 — dramatic headlines
+White          #ffffff — body / contrast
+Signature look = #1e1638 + #f3cc13 + #ffffff
+
+TYPOGRAPHY
+Headline: Montserrat (400 subtitles; 600 section heads; 700 primary heads/callouts; 800-900 display/hero)
+Body: Inter (300 fine print/captions; 400 body/paragraphs; 500 subheads/UI labels; 600 emphasis; 700 pull quotes)
+Type scale: H1 36-48px M800 | H2 24-30px M700 | H3 18-22px M600 | Body 14-16px I400 | Caption 11-13px I400
+
+LOGO RULES
+Clear space = house-icon height. No recolouring outside mono variants. Masters in Shack_Assets/Brand_Central/Logos_Assets. On navy use white/gold; on white use navy/gold.
+
+VOICE
+Small, collaborative, non-extractive. No corporate gloss. SNN tagline: "Small views on the big news."
+
+PLATFORM SIZES (px)
+IG feed 1080x1350 | IG story/reel 1080x1920
+X post 1600x900
+FB feed 1200x630
+TikTok 1080x1920
+YT thumb 1280x720
+Bluesky 2000x2000 (square safe)
+
+PRODUCTION BENCH — CANVA
+Build visuals in Canva from the spec; set these hexes/fonts as the working palette. Export PNG per platform size. Name files <brand>_<platform>_<yyyymmdd>.png into Shack_Assets/Social_Out/.
+
+DELIVERABLES PER REQUEST
+1) Layout spec (grid, margins, hierarchy)
+2) Copy placement + type sizes from the scale
+3) SVG code for simple graphics OR a Canva prompt-pack
+4) Platform variants list (which sizes, which crops)
+
+LAW
+Nothing external without Bola approval (Tier-3). Design Agent directs; Canva produces; Buffer publishes.
