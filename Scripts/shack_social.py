@@ -96,6 +96,13 @@ async def send(update, context):
             "Usage: /social send <draft_id> <services csv>")
         return
     did = parts[2].strip()
+    if did.lower() == 'latest':
+        pend = sorted(f for f in os.listdir(social_dir)
+                      if f.startswith('PENDING_'))
+        if not pend:
+            await update.message.reply_text("No pending drafts.")
+            return
+        did = pend[-1].replace('PENDING_', '').replace('.md', '')
     services = [s.strip().lower() for s in parts[3].split(',')]
     match = [f for f in os.listdir(social_dir)
              if f.startswith('PENDING_') and did in f]

@@ -39,7 +39,8 @@ Build visuals in Canva from the spec; set these hexes/fonts as the working palet
 DELIVERABLES PER REQUEST
 1) Layout spec (grid, margins, hierarchy)
 2) Copy placement + type sizes from the scale
-3) SVG code for simple graphics OR a Canva prompt-pack
+3) ONE fenced ```html code block: a self-contained card — inline CSS, @import Google Fonts (Montserrat/Inter), exact px canvas, logo referenced by file path 
+Card CSS rule: body{margin:0} .card{width:100vw;height:100vh} — no fixed px canvas, so any window size renders true.C:/Users/Bola/Documents/Shack_Project/assets/Shack_Logos/shack_trans.png
 4) Platform variants list (which sizes, which crops)
 
 LAW
