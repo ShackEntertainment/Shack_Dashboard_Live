@@ -263,6 +263,9 @@ def check_mail():
                         _mark_seen(mid, key)
                         continue
                     subject = _decode_subject(msg.get('Subject'))
+                    if subject.upper().startswith('SITE ALERT'):
+                        _mark_seen(mid, key)
+                        continue
                     body = _body_of(msg)
                     tpl = _pick_template(cfg['kind'], subject, body)
                     ts = datetime.now().strftime('%y%m%d_%H%M%S')
@@ -338,3 +341,28 @@ def send_draft(draft_id):
         return 'SENT ✅ ' + meta['TO_ADDR']
     except Exception as e:
         return 'SEND FAILED — ' + e
+SITE_ALERT_TO = ['amit@shackentertainment.co.uk', 'amitmaism32@gmail.com']
+
+def send_site_alert(summary):
+    """[SITEALERT] 2026-08-20 — delegated authority: no approval needed."""
+    try:
+        first_key = next(iter(ACCOUNTS))
+        cfg = ACCOUNTS[first_key]
+        user = os.getenv(cfg['user_env'])
+        pwd = os.getenv(cfg['pass_env'])
+        if not user or not pwd:
+            return 'SITEALERT FAILED — no credentials for ' + first_key
+        host = os.getenv('HOSTINGER_SMTP', 'smtp.hostinger.com')
+        msg = MIMEText('Site issue reported by Site Ops Agent:\n\n'
+                       + summary +
+                       '\n\n— Shack Site Ops (automated alert)',
+                       'plain', 'utf-8')
+        msg['Subject'] = 'SITE ALERT: ' + summary[:80]
+        msg['From'] = user
+        msg['To'] = ', '.join(SITE_ALERT_TO)
+        with smtplib.SMTP_SSL(host, 465) as S:
+            S.login(user, pwd)
+            S.sendmail(user, SITE_ALERT_TO, msg.as_string())
+        return '📧 Amit notified: ' + ' + '.join(SITE_ALERT_TO)
+    except Exception as e:
+        return 'SITEALERT FAILED — ' + str(e)

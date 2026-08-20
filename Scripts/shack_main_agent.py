@@ -16,6 +16,7 @@ import shack_calendar as scl
 import shack_ledger as slg
 import shack_social as soc
 import shack_render as sr
+import shack_news_daily as snd
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
@@ -26,7 +27,9 @@ SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
 CREDENTIALS = os.path.join(project_root, 'configs', 'service_account.json')
 REGISTRY = os.path.join(project_root, 'configs', 'shack_registry.txt')
 DESIGN_BRIEF = os.path.join(project_root, 'configs', 'design_brief.txt')
-
+SITE_OPS_BRIEF = os.path.join(project_root, 'configs', 'site_ops_brief.txt')
+CS_BRIEF = os.path.join(project_root, 'configs', 'content_studio_brief.txt')
+NEWS_BRIEF = os.path.join(project_root, 'configs', 'news_brief.txt')
 ANYTHINGLLM_URL = os.getenv('ANYTHINGLLM_URL', 'http://localhost:3001')
 ANYTHINGLLM_KEY = os.getenv('ANYTHINGLLM_API_KEY', '')
 
@@ -99,7 +102,7 @@ async def _allm_get(path):
         return r.json()
 
 async def _allm_chat(slug, message):
-    async with httpx.AsyncClient(timeout=420) as c:
+    async with httpx.AsyncClient(timeout=900) as c:
         r = await c.post(
             f'{ANYTHINGLLM_URL}/api/v1/workspace/{slug}/chat',
             headers={'Authorization': f'Bearer {ANYTHINGLLM_KEY}',
@@ -160,6 +163,13 @@ async def agent_query(update: Update, context, match: str, label: str,
                 notes.append(f"📅 Held #{hid}: {t.strip()} ({s}, {m} min)")
             answer = (answer + '\n\n' + '\n'.join(notes) +
                       '\nReview: /cal pending — book: /cal confirm <id>')
+        alerts = re.findall(r'SITEALERT:\s*(.+)', answer)
+        if alerts:
+            anotes = []
+            for a in alerts:
+                anotes.append(await asyncio.to_thread(
+                    mb.send_site_alert, a.strip()))
+            answer = answer + '\n\n' + '\n'.join(anotes)
 
         await context.bot.edit_message_text(
             chat_id=update.message.chat.id,
@@ -322,11 +332,11 @@ AGENTS = [
     ('cos',  'chief of staff',  'Chief of Staff',     '🧠'),
     ('ar',   'artist relations','Artist Relations',   '🎤'),
     ('mk',   'marketing',       'Marketing Agent',    '📣', REGISTRY),
-    ('cs',   'content studio',  'Content Studio',     '🎬'),
-    ('news', 'news editor',     'Shack News Editor',  '📰'),
+    ('cs',   'content studio',  'Content Studio',     '🎬', CS_BRIEF),
+    ('news', 'news editor',     'Shack News Editor',  '📰', NEWS_BRIEF),
     ('ra',   'research analyst','Research Analyst',   '🔬'),
-    ('ops',  'site ops',        'Site Ops Agent',     '🛠️'),
-    ('da',   'design agent',    'Design Agent',       '✏️'),
+    ('ops',  'site ops',        'Site Ops Agent',     '🛠️', SITE_OPS_BRIEF),
+    ('da',   'design agent',    'Design Agent',       '✏️', DESIGN_BRIEF),
     ('bv',   'brand vision',    'Brand Vision',       '🧭'),
     ('fd',   'film director',   'Film Director',      '🎥'),
     ('comms','communication',   'Communications',     '💬'),
@@ -580,5 +590,6 @@ if __name__ == '__main__':
 
     soc.add_handlers(app)
     sr.add_handlers(app)
+    snd.add_handlers(app)
     print("Bot started...")
     app.run_polling()
