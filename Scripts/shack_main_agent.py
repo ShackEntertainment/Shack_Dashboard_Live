@@ -30,6 +30,13 @@ DESIGN_BRIEF = os.path.join(project_root, 'configs', 'design_brief.txt')
 SITE_OPS_BRIEF = os.path.join(project_root, 'configs', 'site_ops_brief.txt')
 CS_BRIEF = os.path.join(project_root, 'configs', 'content_studio_brief.txt')
 NEWS_BRIEF = os.path.join(project_root, 'configs', 'news_brief.txt')
+RA_BRIEF = os.path.join(project_root, 'configs', 'research_brief.txt')
+FD_BRIEF = os.path.join(project_root, 'configs', 'film_director_brief.txt')
+CD_BRIEF = os.path.join(project_root, 'configs', 'creative_director_brief.txt')
+BV_BRIEF = os.path.join(project_root, 'configs', 'brand_vision_brief.txt')
+AR_BRIEF = os.path.join(project_root, 'configs', 'artist_relations_brief.txt')
+COS_BRIEF = os.path.join(project_root, 'configs', 'chief_of_staff_brief.txt')
+COMMS_BRIEF = os.path.join(project_root, 'configs', 'comms_brief.txt')
 ANYTHINGLLM_URL = os.getenv('ANYTHINGLLM_URL', 'http://localhost:3001')
 ANYTHINGLLM_KEY = os.getenv('ANYTHINGLLM_API_KEY', '')
 
@@ -329,17 +336,18 @@ async def log_cmd(update: Update, context):
 # ============================================================================
 
 AGENTS = [
-    ('cos',  'chief of staff',  'Chief of Staff',     '🧠'),
-    ('ar',   'artist relations','Artist Relations',   '🎤'),
+    ('cos',  'chief of staff',  'Chief of Staff',     '🧠', COS_BRIEF),
+    ('ar',   'artist relations','Artist Relations',   '🎤', AR_BRIEF),
     ('mk',   'marketing',       'Marketing Agent',    '📣', REGISTRY),
     ('cs',   'content studio',  'Content Studio',     '🎬', CS_BRIEF),
     ('news', 'news editor',     'Shack News Editor',  '📰', NEWS_BRIEF),
-    ('ra',   'research analyst','Research Analyst',   '🔬'),
+    ('ra',   'research analyst','Research Analyst',   '🔬', RA_BRIEF),
     ('ops',  'site ops',        'Site Ops Agent',     '🛠️', SITE_OPS_BRIEF),
     ('da',   'design agent',    'Design Agent',       '✏️', DESIGN_BRIEF),
-    ('bv',   'brand vision',    'Brand Vision',       '🧭'),
-    ('fd',   'film director',   'Film Director',      '🎥'),
-    ('comms','communication',   'Communications',     '💬'),
+    ('bv',   'brand vision',    'Brand Vision',       '🧭', BV_BRIEF),
+    ('fd',   'film director',   'Film Director',      '🎥', FD_BRIEF),
+    ('cd',   'creative director','Creative Director', '🎭', CD_BRIEF),
+    ('comms','communication',   'Communications',     '💬', COMMS_BRIEF),
 ]
 
 def _make_agent(match, label, emoji, context_file=None):
@@ -453,6 +461,7 @@ async def mail_loop(application):
 
 async def post_init(application):
     asyncio.create_task(mail_loop(application))
+    snd.start_news_loop(application)
 
 async def drafts(update: Update, context):
     pend = mb.list_drafts()

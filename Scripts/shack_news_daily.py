@@ -2,6 +2,7 @@
 SHACK ENTERTAINMENT — shack_news_daily.py
 [NEWSDAILY] 2026-08-20 — one article per topic per day; md + PDF
 (bit-for-bit identical) into Desktop\Shack Daily News for Bola's read.
+6 AM daily auto-edition + /dailynews on demand.
 Nothing publishes externally. RSS-grounded: no invented facts.
 """
 import os
@@ -9,7 +10,7 @@ import re
 import asyncio
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import CommandHandler
 import httpx
@@ -30,6 +31,7 @@ ANYTHINGLLM_KEY = os.getenv('ANYTHINGLLM_API_KEY', '')
 BRIEF = os.path.join(project_root, 'configs', 'news_brief.txt')
 OUT_DIR = os.path.join(os.path.expanduser('~'), 'Desktop', 'Shack Daily News')
 os.makedirs(OUT_DIR, exist_ok=True)
+LAST_CHAT = os.path.join(project_root, 'configs', 'last_chat.txt')
 
 TOPICS = [
     ('UK Headline News', 'http://feeds.bbci.co.uk/news/uk/rss.xml'),
@@ -79,6 +81,13 @@ async def _find_slug(match):
         if match in name:
             return slug
     return None
+
+def _last_chat():
+    try:
+        with open(LAST_CHAT) as f:
+            return f.read().strip()
+    except Exception:
+        return ''
 
 def _feed(url, n=5):
     try:
@@ -165,24 +174,16 @@ def _make_pdf(md_text, out_path):
     pdf.output(out_path)
     return True
 
-async def dailynews(update, context):
-    parts = (update.message.text or '').split()
-    only = parts[1].lower() if len(parts) > 1 else ''
-    picks = [t for t in TOPICS if only and only in t[0].lower()] or \
-            ([t for t in TOPICS] if not only else None)
-    if not picks:
-        await update.message.reply_text("No topic matches. Topics: " +
-                                        ' | '.join(t[0] for t in TOPICS))
-        return
-    await update.message.reply_text(
-        f"📰 Newsroom is writing {len(picks)} article(s)...")
+async def _produce(only='', send=None):
+    picks = [t for t in TOPICS if only and only in t[0].lower()]
+    if not picks and not only:
+        picks = list(TOPICS)
     brief = ''
     if os.path.exists(BRIEF):
         brief = open(BRIEF, encoding='utf-8').read()
     slug = await _find_slug('news')
     if not slug:
-        await update.message.reply_text("No news workspace found.")
-        return
+        return ['❌ No news workspace found.']
     date_str = datetime.now().strftime('%d %B %Y')
     filedate = datetime.now().strftime('%Y-%m-%d')
     done = []
@@ -206,23 +207,64 @@ async def dailynews(update, context):
             md = _shape(safe, topic, date_str)
             slugname = re.sub(r'[^A-Za-z0-9]+', '-', topic).strip('-')
             base = filedate + '_' + slugname
-            md_path = os.path.join(OUT_DIR, base + '.md')
-            with open(md_path, 'w', encoding='cp1252') as f:
+            with open(os.path.join(OUT_DIR, base + '.md'), 'w',
+                      encoding='cp1252') as f:
                 f.write(md)
             pdf_ok = _make_pdf(md, os.path.join(OUT_DIR, base + '.pdf'))
             headline = md.splitlines()[0].lstrip('#').strip()
-            done.append(('✅ ' if pdf_ok else '📄 ') + topic +
-                        ' saved' + (' + PDF' if pdf_ok else ' (PDF skipped)') +
-                        ': ' + headline)
-            await update.message.reply_text(done[-1])
+            line = (('✅ ' if pdf_ok else '📄 ') + topic + ' saved' +
+                    (' + PDF' if pdf_ok else ' (PDF skipped)') +
+                    ': ' + headline)
+            done.append(line)
+            if send:
+                await send(line)
         except asyncio.TimeoutError:
             done.append('⏳ ' + topic + ': stalled — skipped')
         except Exception as e:
             done.append('❌ ' + topic + ': ' + type(e).__name__)
+    return done
+
+async def dailynews(update, context):
+    parts = (update.message.text or '').split()
+    only = parts[1].lower() if len(parts) > 1 else ''
+    if only and not [t for t in TOPICS if only in t[0].lower()]:
+        await update.message.reply_text("No topic matches. Topics: " +
+                                        ' | '.join(t[0] for t in TOPICS))
+        return
+    n = len([t for t in TOPICS if only and only in t[0].lower()]) or len(TOPICS)
+    await update.message.reply_text(
+        f"📰 Newsroom is writing {n} article(s)...")
+    done = await _produce(only, send=update.message.reply_text)
     await update.message.reply_text(
         'Daily desk complete. Folder: Desktop\\Shack Daily News\n' +
         '\n'.join(done) +
         '\nNothing published externally — awaiting your read.')
+
+async def news_loop(app):
+    while True:
+        now = datetime.now()
+        target = now.replace(hour=6, minute=0, second=0, microsecond=0)
+        if target <= now:
+            target += timedelta(days=1)
+        await asyncio.sleep((target - now).total_seconds())
+        chat = _last_chat()
+        if not chat:
+            continue
+        try:
+            await app.bot.send_message(
+                int(chat), "📰 6 AM edition — newsroom writing the six...")
+            done = await _produce(
+                send=lambda t: app.bot.send_message(int(chat), t))
+            await app.bot.send_message(
+                int(chat),
+                'Daily desk complete. Folder: Desktop\\Shack Daily News\n' +
+                '\n'.join(done) +
+                '\nNothing published externally — awaiting your read.')
+        except Exception as e:
+            print(f"news_loop error: {e}")
+
+def start_news_loop(app):
+    asyncio.create_task(news_loop(app))
 
 def add_handlers(app):
     app.add_handler(CommandHandler('dailynews', dailynews))
