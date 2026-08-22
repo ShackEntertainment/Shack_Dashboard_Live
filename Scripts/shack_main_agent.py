@@ -130,6 +130,42 @@ async def _find_slug(match):
             return slug
     return None
 
+DATA_DIR = os.path.join(project_root, 'Data')
+ROSTER_FILES = ['artists.csv', 'partners.csv', 'staff.csv',
+                'outlets.csv', 'artist_stock.csv']
+ROSTER_MATCHES = ('artist relations', 'marketing', 'content studio',
+                  'news editor')
+EQUIP_MATCHES = ('film director', 'content studio')
+CHANNELS_FILE = os.path.join(project_root, 'configs', 'media_channels.md')
+CHANNEL_MATCHES = ('marketing', 'content studio', 'communication')
+
+def _read_rows(path):
+    try:
+        with open(path, encoding='utf-8') as f:
+            return [l.rstrip() for l in f if l.strip()]
+    except Exception:
+        return []
+
+def _data_pack(match):
+    out = []
+    if match in ROSTER_MATCHES:
+        for fn in ROSTER_FILES:
+            lines = _read_rows(os.path.join(DATA_DIR, fn))
+            if len(lines) > 1:
+                out.append('## ' + fn + '\n' + '\n'.join(lines))
+        if out:
+            out.insert(0, 'LIVE ESTATE DATA — single source of truth. '
+                          'Use these rows; do not invent beyond them:')
+    if match in EQUIP_MATCHES:
+        lines = _read_rows(os.path.join(DATA_DIR, 'equipment.csv'))
+        if len(lines) > 1:
+            out.append('## equipment.csv (real inventory)\n' +
+                       '\n'.join(lines))
+    if match in CHANNEL_MATCHES and os.path.exists(CHANNELS_FILE):
+        with open(CHANNELS_FILE, encoding='utf-8') as f:
+            out.append('## YouTube channels (real, live)\n' + f.read())
+    return '\n\n'.join(out)
+
 async def agent_query(update: Update, context, match: str, label: str,
                       emoji: str, context_file: str = None):
     try:
@@ -150,6 +186,9 @@ async def agent_query(update: Update, context, match: str, label: str,
             with open(context_file, encoding='utf-8') as f:
                 prompt = ("GROUND TRUTH — Shack Brand & Channel Registry:\n"
                           + f.read() + "\n\nRequest: " + prompt)
+        pack = _data_pack(match)
+        if pack:
+            prompt = prompt + "\n\n" + pack
 
         thinking = await update.message.reply_text(f"{emoji} {label} is thinking...")
         slug = await _find_slug(match)

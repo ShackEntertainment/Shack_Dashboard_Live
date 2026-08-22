@@ -1,8 +1,8 @@
 """
 SHACK ENTERTAINMENT — shack_news_daily.py
-[NEWSDAILY] 2026-08-20 — one article per topic per day; md + PDF
-(bit-for-bit identical) into Desktop\Shack Daily News for Bola's read.
-6 AM daily auto-edition + /dailynews on demand.
+[NEWSDAILY] 2026-08-22 — one article per topic per day; md + PDF
+(bit-for-bit identical) into dated folders under Desktop\Shack
+Daily News. 6 AM daily auto-edition + /dailynews on demand.
 Nothing publishes externally. RSS-grounded: no invented facts.
 """
 import os
@@ -186,6 +186,8 @@ async def _produce(only='', send=None):
         return ['❌ No news workspace found.']
     date_str = datetime.now().strftime('%d %B %Y')
     filedate = datetime.now().strftime('%Y-%m-%d')
+    day_dir = os.path.join(OUT_DIR, 'Todays News - ' + filedate)
+    os.makedirs(day_dir, exist_ok=True)
     done = []
     for topic, url in picks:
         try:
@@ -207,10 +209,10 @@ async def _produce(only='', send=None):
             md = _shape(safe, topic, date_str)
             slugname = re.sub(r'[^A-Za-z0-9]+', '-', topic).strip('-')
             base = filedate + '_' + slugname
-            with open(os.path.join(OUT_DIR, base + '.md'), 'w',
+            with open(os.path.join(day_dir, base + '.md'), 'w',
                       encoding='cp1252') as f:
                 f.write(md)
-            pdf_ok = _make_pdf(md, os.path.join(OUT_DIR, base + '.pdf'))
+            pdf_ok = _make_pdf(md, os.path.join(day_dir, base + '.pdf'))
             headline = md.splitlines()[0].lstrip('#').strip()
             line = (('✅ ' if pdf_ok else '📄 ') + topic + ' saved' +
                     (' + PDF' if pdf_ok else ' (PDF skipped)') +
