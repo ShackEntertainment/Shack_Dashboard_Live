@@ -17,6 +17,7 @@ import shack_ledger as slg
 import shack_social as soc
 import shack_render as sr
 import shack_news_daily as snd
+import shack_equipment_ingest as eqi
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
@@ -639,5 +640,6 @@ if __name__ == '__main__':
     soc.add_handlers(app)
     sr.add_handlers(app)
     snd.add_handlers(app)
+    eqi.add_handlers(app)
     print("Bot started...")
     app.run_polling()

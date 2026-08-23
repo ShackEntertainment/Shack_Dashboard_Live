@@ -1,6 +1,6 @@
-id,item,category,serial,status,location,notes
-EQ_001,Camera body,camera,,active,studio,model + serial to add
-EQ_002,Camera body (backup),camera,,active,studio,model + serial to add
-EQ_003,LED light panel,lighting,,active,studio,
-EQ_004,OBS studio broadcast rig,broadcast,,active,studio,PC + capture + stream chain
-EQ_005,Example item,category,,active,studio,delete or replace as you list the real kit
+id,item,category,serial,status,location,purchased,price,seller,notes
+EQ_001,Camera body,camera,,active,studio,,,,model + serial to add
+EQ_002,Camera body (backup),camera,,active,studio,,,,model + serial to add
+EQ_003,LED light panel,lighting,,active,studio,,,,
+EQ_004,OBS studio broadcast rig,broadcast,,active,studio,,,,PC + capture + stream chain
+EQ_005,Canon R8 Camera EOS Mirrorless camera,lens,(286290342415) active studio 9 Jun 2025 1273.00 mh-fulfillment
