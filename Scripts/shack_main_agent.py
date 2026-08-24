@@ -135,7 +135,7 @@ DATA_DIR = os.path.join(project_root, 'Data')
 ROSTER_FILES = ['artists.csv', 'partners.csv', 'staff.csv',
                 'outlets.csv', 'artist_stock.csv']
 ROSTER_MATCHES = ('artist relations', 'marketing', 'content studio',
-                  'news editor')
+                  'news editor', 'research analyst')
 EQUIP_MATCHES = ('film director', 'content studio')
 CHANNELS_FILE = os.path.join(project_root, 'configs', 'media_channels.md')
 CHANNEL_MATCHES = ('marketing', 'content studio', 'communication')
@@ -166,6 +166,63 @@ def _data_pack(match):
         with open(CHANNELS_FILE, encoding='utf-8') as f:
             out.append('## YouTube channels (real, live)\n' + f.read())
     return '\n\n'.join(out)
+
+QWEN_KEY = os.getenv('QWEN_API_KEY', '')
+
+async def qwen_verify(flags):
+    if not QWEN_KEY:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=120) as c:
+            r = await c.post(
+                'https://ws-rhaqwof3a8jodd0y.ap-southeast-1.maas.aliyuncs.com/'
+                'compatible-mode/v1/chat/completions',
+                headers={'Authorization': f'Bearer {QWEN_KEY}',
+                         'Content-Type': 'application/json'},
+                json={'model': 'qwen-plus',
+                      'enable_search': True,
+                      'messages': [{'role': 'user', 'content':
+                          'You are the verification desk of Shack '
+                          'Entertainment. Using live web search, check '
+                          'each flagged claim. Reply in at most 3 lines, '
+                          'each starting VERIFIED: or UNVERIFIABLE: with '
+                          'the truth and one source. Claims:\n' +
+                          '\n'.join(flags)}]})
+            r.raise_for_status()
+            return r.json()['choices'][0]['message']['content'].strip()
+    except Exception:
+        return '(Qwen verify failed — check key/connection)'
+
+async def qwen_audit(text):
+    try:
+        async with httpx.AsyncClient(timeout=120) as c:
+            r = await c.post(
+                'https://ws-rhaqwof3a8jodd0y.ap-southeast-1.maas.aliyuncs.com/'
+                'compatible-mode/v1/chat/completions',
+                headers={'Authorization': f'Bearer {QWEN_KEY}',
+                         'Content-Type': 'application/json'},
+                json={'model': 'qwen-plus',
+                      'enable_search': True,
+                      'messages': [{'role': 'user', 'content':
+                          'You are Shack Entertainment\'s verification '
+                          'desk. The draft below may contain wrong '
+                          'registry numbers, dates, emails or prices. '
+                          'Using live web search, check every such '
+                          'specific claim. Reply in up to 5 lines, each '
+                          'starting CORRECT: or WRONG: <claim> -> '
+                          '<truth + source>. If nothing is wrong, reply '
+                          'one line: ALL CLAIMS CHECKED OK. Never invent '
+                          'URLs, sources or access dates; if you have no '
+                          'live search result for a claim, start that line '
+                          'UNVERIFIABLE:. Only mark WRONG when your live '
+                          'snippet explicitly names the same organisation; '
+                          'never correct a curated internal value using a '
+                          'snippet about a different entity. Draft:\n' +
+                          text[:3000]}]})
+            r.raise_for_status()
+            return r.json()['choices'][0]['message']['content'].strip()
+    except Exception:
+        return '(Qwen audit failed — check key/connection)'
 
 async def agent_query(update: Update, context, match: str, label: str,
                       emoji: str, context_file: str = None):
@@ -199,6 +256,21 @@ async def agent_query(update: Update, context, match: str, label: str,
         answer = data.get('textResponse') or '(no response)'
         if len(answer) > 4000:
             answer = answer[:4000] + '\n…(truncated)'
+
+        flags = [l.strip() for l in answer.splitlines()
+                 if '[UNVERIFIED' in l.upper()]
+        if flags:
+            verdict = await qwen_verify(flags)
+            if verdict:
+                answer = answer + '\n\n🔎 Qwen check:\n' + verdict
+            else:
+                answer = (answer + '\n\n🔎 QWEN CHECK NEEDED — no API '
+                          'key in .env; paste flagged lines to Qwen.')
+
+        if match == 'research analyst' and QWEN_KEY:
+            audit = await qwen_audit(answer)
+            if audit:
+                answer = answer + '\n\n🔎 Qwen audit:\n' + audit
 
         holds = re.findall(
             r'HOLD:\s*(.+?)\s*\|\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\|\s*(\d+)',
