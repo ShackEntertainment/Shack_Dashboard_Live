@@ -24,3 +24,10 @@ DIV — Partnerships
   active: Pullingers Art Supplies
 
 BUFFER: yes / no Yes
+
+BRAND LOCK — NEWS PUBLICATION
+- Our in-house news publication is: Shack News Network (SNN).
+- The legacy name "Shack News" is RETIRED for external use.
+- "Shacknews" / shacknews.com is a THIRD-PARTY gaming site. It is NOT
+  a Shack Entertainment asset. Never cite it as ours, never use it as
+  a source for Shack facts, never let a draft confuse the two.

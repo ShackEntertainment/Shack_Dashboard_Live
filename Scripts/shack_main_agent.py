@@ -205,8 +205,11 @@ async def qwen_audit(text):
                       'enable_search': True,
                       'messages': [{'role': 'user', 'content':
                           'You are Shack Entertainment\'s verification '
-                          'desk. The draft below may contain wrong '
-                          'registry numbers, dates, emails or prices. '
+                          'desk. Brand lock: Shack Entertainment\'s '
+                          'in-house news publication is Shack News '
+                          'Network (SNN); Shacknews (shacknews.com) is '
+                          'an unrelated third party. The draft below may '
+                          'contain wrong '                          'registry numbers, dates, emails or prices. '
                           'Using live web search, check every such '
                           'specific claim. Reply in up to 5 lines, each '
                           'starting CORRECT: or WRONG: <claim> -> '

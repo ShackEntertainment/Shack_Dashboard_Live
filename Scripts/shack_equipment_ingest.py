@@ -3,12 +3,14 @@ SHACK ENTERTAINMENT — shack_equipment_ingest.py
 [EQUIP] Reads receipts from Data\receipts, asks the local 4B for
 one CSV row each, appends to Data\equipment.csv, moves the receipt
 to Data\receipts\processed. Human reviews the rows afterwards.
+Vision-enabled: PNG/JPG receipts are handed to the VL model as images.
 """
 from telegram.ext import CommandHandler
 import os
 import re
 import shutil
 import asyncio
+import base64
 import httpx
 import pypdf
 
@@ -24,6 +26,7 @@ HEADER = ('id,item,category,serial,status,location,purchased,price,'
           'seller,notes')
 OLLAMA = 'http://localhost:11434'
 MODEL = 'qwen3-vl:4b-instruct'
+IMG_EXTS = ('.png', '.jpg', '.jpeg', '.webp')
 
 def receipt_text(path):
     if path.lower().endswith('.pdf'):
@@ -38,7 +41,7 @@ def receipt_text(path):
     except Exception:
         return ''
 
-async def extract(text):
+async def extract(text, images=None):
     prompt = (
         'You are an inventory clerk. From this purchase receipt extract '
         'exactly one equipment line. Return ONLY one CSV line, fields in '
@@ -46,12 +49,16 @@ async def extract(text):
         'seller,notes. category is one of: camera,lens,lighting,audio,'
         'broadcast,computer,rigging,other. purchased is YYYY-MM-DD. '
         'serial blank if absent. status is active. location is studio. '
-        'No commas inside fields - use spaces. No quotes. One line only.'
+        'Separate the fields with commas; inside a field use spaces, '
+        'never a comma. No quotes. One line only. Example: '
+        'Canon R8 body,camera,,active,studio,2026-08-24,229.99,Amazon EU,'
         '\n\nRECEIPT:\n' + text[:6000])
-    async with httpx.AsyncClient(timeout=180) as c:
+    msg = {'role': 'user', 'content': prompt}
+    if images:
+        msg['images'] = images
+    async with httpx.AsyncClient(timeout=300) as c:
         r = await c.post(OLLAMA + '/api/chat', json={
-            'model': MODEL, 'stream': False,
-            'messages': [{'role': 'user', 'content': prompt}]})
+            'model': MODEL, 'stream': False, 'messages': [msg]})
         r.raise_for_status()
         return r.json()['message']['content'].strip()
 
@@ -77,12 +84,18 @@ async def main():
         p = os.path.join(REC, fn)
         if not os.path.isfile(p):
             continue
-        text = receipt_text(p)
-        if len(text.strip()) < 40:
+        images = None
+        if fn.lower().endswith(IMG_EXTS):
+            with open(p, 'rb') as f:
+                images = [base64.b64encode(f.read()).decode()]
+            text = '(image receipt - read the picture)'
+        else:
+            text = receipt_text(p)
+        if len(text.strip()) < 40 and not images:
             print('SKIP (no readable text - enter by hand):', fn)
             continue
         try:
-            line = await extract(text)
+            line = await extract(text, images)
         except Exception as e:
             print('SKIP (model error):', fn, e)
             continue
@@ -91,8 +104,8 @@ async def main():
         added.append('%s -> EQ_%03d' % (fn, nid))
         nid += 1
         shutil.move(p, os.path.join(DONE, fn))
-    with open(CSV, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(rows) + '\n')
+        with open(CSV, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(rows) + '\n')
     print('added %d row(s):' % len(added))
     for a in added:
         print(' ', a)

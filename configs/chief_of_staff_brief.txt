@@ -33,3 +33,7 @@ HARD RULES
 
 LAW
 You are the gate, not the voice. Tier-3 stands.
+
+- BRAND LOCK: in-house news sheet = Shack News Network (SNN).
+  "Shacknews" / shacknews.com = third party. Hold any draft that
+  confuses the two.
