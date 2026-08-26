@@ -51,6 +51,15 @@ HEALTH_GROUND = ("Write evergreen performer fitness / wellness / "
     "injury-prevention guidance. No invented studies, statistics or "
     "expert quotes; label all recommendations as editorial guidance.")
 
+IDENTITY = {
+    'UK Headline News': 'You are the UK desk: UK home affairs, politics, economy, weather, public safety.',
+    'Headline Geopolitical News': 'You are the World desk: geopolitics, conflicts, diplomacy.',
+    'Latest AI & Tech News': 'You are the AI & Tech desk: artificial intelligence, science, innovation, creator rights.',
+    'Creative Arts on the Fringe': 'You are the Arts desk: fringe, film, music, culture.',
+    'Chinese Tech News and Innovation': 'You are the China desk: Chinese business, tech, markets, geopolitics.',
+    'Health & Wellness': 'You are the Health desk: performer fitness, injury prevention, wellness.',
+}
+
 _workspace_cache = {}
 
 async def _allm_get(path):
@@ -189,11 +198,14 @@ async def _produce(only='', send=None):
     day_dir = os.path.join(OUT_DIR, 'Todays News - ' + filedate)
     os.makedirs(day_dir, exist_ok=True)
     done = []
+    seen = []
     for topic, url in picks:
         try:
             material = _feed(url) if url else (
                 ARTS_GROUND if 'Arts' in topic else HEALTH_GROUND)
             prompt = (brief + '\n\nTOPIC: ' + topic +
+                      '\nDESK IDENTITY: ' + IDENTITY.get(topic, '') +
+                      ' Write only about this beat.'
                       '\nSOURCE MATERIAL (real, fetched now):\n' + material +
                       '\n\nWrite ONE 400-500 word article using ONLY the '
                       'source material above plus estate knowledge from the '
@@ -207,6 +219,25 @@ async def _produce(only='', send=None):
                 continue
             safe = text.encode('cp1252', 'replace').decode('cp1252')
             md = _shape(safe, topic, date_str)
+            headline = md.splitlines()[0].lstrip('#').strip()
+            if any(headline.lower() == h.lower() for h in seen):
+                nudge = (prompt + '\n\nYour headline "' + headline +
+                         '" duplicates another desk today (' +
+                         '; '.join(seen) +
+                         '). Rewrite the article with a NEW headline '
+                         'for YOUR beat only.')
+                try:
+                    d2 = await asyncio.wait_for(
+                        _allm_chat(slug, nudge), timeout=400)
+                    t2 = d2.get('textResponse') or ''
+                    if t2.strip():
+                        safe = t2.encode('cp1252', 'replace').decode('cp1252')
+                        md = _shape(safe, topic, date_str)
+                        headline = md.splitlines()[0].lstrip('#').strip()
+                except Exception:
+                    pass
+            dup = any(headline.lower() == h.lower() for h in seen)
+            seen.append(headline)
             slugname = re.sub(r'[^A-Za-z0-9]+', '-', topic).strip('-')
             base = filedate + '_' + slugname
             with open(os.path.join(day_dir, base + '.md'), 'w',
@@ -216,6 +247,7 @@ async def _produce(only='', send=None):
             headline = md.splitlines()[0].lstrip('#').strip()
             line = (('✅ ' if pdf_ok else '📄 ') + topic + ' saved' +
                     (' + PDF' if pdf_ok else ' (PDF skipped)') +
+                    (' ⚠ headline overlaps' if dup else '') +
                     ': ' + headline)
             done.append(line)
             if send:
