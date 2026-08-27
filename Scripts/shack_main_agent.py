@@ -19,6 +19,7 @@ import shack_render as sr
 import shack_news_daily as snd
 import shack_equipment_ingest as eqi
 import shack_expenses_ingest
+import shack_roster_clerk as src
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
@@ -718,6 +719,7 @@ if __name__ == '__main__':
     snd.add_handlers(app)
     eqi.add_handlers(app)
     shack_expenses_ingest.add_handlers(app)
+    src.add_handlers(app)
     print("Bot started...")
     print("Bot started...")
     app.run_polling()

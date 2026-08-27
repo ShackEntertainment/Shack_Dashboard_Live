@@ -3,7 +3,8 @@ SHACK ENTERTAINMENT — shack_equipment_ingest.py
 [EQUIP] Reads receipts from Data\receipts, asks the local 4B for
 one CSV row each, appends to Data\equipment.csv, moves the receipt
 to Data\receipts\processed. Human reviews the rows afterwards.
-Vision-enabled: PNG/JPG receipts are handed to the VL model as images.
+Vision-enabled: PNG/JPG receipts and textless PDFs are rendered to
+images and handed to the VL model.
 """
 from telegram.ext import CommandHandler
 import os
@@ -11,8 +12,11 @@ import re
 import shutil
 import asyncio
 import base64
+import io
 import httpx
 import pypdf
+import fitz
+from PIL import Image
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
@@ -41,6 +45,22 @@ def receipt_text(path):
     except Exception:
         return ''
 
+def pdf_to_image(path):
+    """Render first page of PDF to base64 JPEG, shrunk to 1024px."""
+    try:
+        doc = fitz.open(path)
+        page = doc[0]
+        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+        img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+        img.thumbnail((1024, 1024))
+        buf = io.BytesIO()
+        img.save(buf, 'JPEG', quality=85)
+        doc.close()
+        return [base64.b64encode(buf.getvalue()).decode()]
+    except Exception as e:
+        print(f'PDF render failed: {e}')
+        return None
+
 async def extract(text, images=None):
     prompt = (
         'You are an inventory clerk. From this purchase receipt extract '
@@ -56,7 +76,7 @@ async def extract(text, images=None):
     msg = {'role': 'user', 'content': prompt}
     if images:
         msg['images'] = images
-    async with httpx.AsyncClient(timeout=300) as c:
+    async with httpx.AsyncClient(timeout=600) as c:
         r = await c.post(OLLAMA + '/api/chat', json={
             'model': MODEL, 'stream': False, 'messages': [msg]})
         r.raise_for_status()
@@ -86,14 +106,25 @@ async def main():
             continue
         images = None
         if fn.lower().endswith(IMG_EXTS):
-            with open(p, 'rb') as f:
-                images = [base64.b64encode(f.read()).decode()]
+            im = Image.open(p)
+            im.thumbnail((1024, 1024))
+            buf = io.BytesIO()
+            im.save(buf, 'JPEG', quality=85)
+            images = [base64.b64encode(buf.getvalue()).decode()]
             text = '(image receipt - read the picture)'
         else:
             text = receipt_text(p)
-        if len(text.strip()) < 40 and not images:
-            print('SKIP (no readable text - enter by hand):', fn)
-            continue
+        if len(text.strip()) < 40:
+            if fn.lower().endswith('.pdf'):
+                images = pdf_to_image(p)
+                if images:
+                    text = '(textless PDF - rendered to image)'
+                else:
+                    print('SKIP (PDF render failed - enter by hand):', fn)
+                    continue
+            elif not images:
+                print('SKIP (no readable text - enter by hand):', fn)
+                continue
         try:
             line = await extract(text, images)
         except Exception as e:

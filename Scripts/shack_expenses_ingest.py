@@ -11,8 +11,10 @@ import re
 import shutil
 import asyncio
 import base64
+import io
 import httpx
 import pypdf
+from PIL import Image
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
@@ -56,7 +58,7 @@ async def extract(text, images=None):
     msg = {'role': 'user', 'content': prompt}
     if images:
         msg['images'] = images
-    async with httpx.AsyncClient(timeout=300) as c:
+    async with httpx.AsyncClient(timeout=600) as c:
         r = await c.post(OLLAMA + '/api/chat', json={
             'model': MODEL, 'stream': False, 'messages': [msg]})
         r.raise_for_status()
@@ -86,8 +88,11 @@ async def main():
             continue
         images = None
         if fn.lower().endswith(IMG_EXTS):
-            with open(p, 'rb') as f:
-                images = [base64.b64encode(f.read()).decode()]
+            im = Image.open(p)
+            im.thumbnail((1024, 1024))
+            buf = io.BytesIO()
+            im.save(buf, 'JPEG', quality=85)
+            images = [base64.b64encode(buf.getvalue()).decode()]
             text = '(image receipt - read the picture)'
         else:
             text = receipt_text(p)
