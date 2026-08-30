@@ -1,4 +1,4 @@
-# DOCUMENT 9 — CHARITY & COMMUNITY ASSOCIATION
+# B2B_04 — CHARITY & COMMUNITY ASSOCIATION
 
 **BETWEEN:** (1) SHACK ENTERTAINMENT LIMITED ("the Company"); and (2) [CHARITY NAME], registered charity no. [number] ("the Charity").
 

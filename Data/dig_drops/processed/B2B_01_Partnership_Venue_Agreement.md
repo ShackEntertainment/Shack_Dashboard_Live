@@ -1,4 +1,4 @@
-# DOCUMENT 6 — PARTNERSHIP VENUE AGREEMENT (B2B)
+# B2B_01 — PARTNERSHIP VENUE AGREEMENT (B2B)
 
 **BETWEEN:** (1) SHACK ENTERTAINMENT LIMITED ("the Company"); and (2) [VENUE NAME], of [address] ("the Venue").
 
@@ -11,6 +11,6 @@
 **7. INSURANCE** — The Venue holds public liability for the premises; the Company holds public liability for production; each owns and insures its own equipment.
 **8. BRANDING & MEDIA** — The Venue may use the Shack name and logo per brand guidelines. The Company owns the archive.
 **9. CONDUCT** — Breach of licensing or safeguarding law is a material breach.
-**10. GENERAL** — Clauses 9.1-9.8 of Document 1 apply as if repeated here.
+**10. GENERAL** — Clauses 9.1-9.8 of AU_01 apply as if repeated here.
 
 **SIGNED** for the Company: BOLA KASSIM, Director ………… **for the Venue:** ………… Date …………

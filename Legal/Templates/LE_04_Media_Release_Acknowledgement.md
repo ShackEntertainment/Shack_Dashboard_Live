@@ -1,4 +1,4 @@
-# DOCUMENT 5 — MEDIA RELEASE & ACKNOWLEDGEMENT
+# LE_04 — MEDIA RELEASE & ACKNOWLEDGEMENT
 *Signed once, alongside the Springboard Partnership Agreement.*
 
 - [ ] I have read the Springboard Partnership Agreement and understand it is a fixed one-year commitment.
@@ -6,5 +6,6 @@
 - [ ] I grant Shack the irrevocable right to capture, film and record my performances for the Shack Archive and promotion.
 - [ ] I retain ownership of my underlying songs/art; Shack owns the recordings of those works made at Shack events.
 - [ ] I am a disciplined professional and will adhere to the roster's scheduling and production standards.
+- [ ] Renewal, exit and termination terms are governed by LE_01; this release is the media-consent schedule to it.
 
 Signed (Artist) ………… Date …………

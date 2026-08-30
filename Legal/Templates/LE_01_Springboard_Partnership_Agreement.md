@@ -1,4 +1,4 @@
-# DOCUMENT 2 — THE LIVE EXCHANGE SPRINGBOARD PARTNERSHIP AGREEMENT
+# LE_01 — THE LIVE EXCHANGE SPRINGBOARD PARTNERSHIP AGREEMENT
 
 **THIS AGREEMENT** is made on [date]
 
@@ -7,6 +7,7 @@
 **1. NATURE OF THE RELATIONSHIP**
 1.1 This is a partnership and development arrangement, not a management contract. The Artist remains self-managed and free to work outside the Shack calendar; the Company takes no share of income earned outside this Agreement.
 1.2 The Company's purpose is a springboard: booking, producing and promoting the Artist at partnership venues and through Shack media.
+1.3 The Company's live lane is limited to live and music performance; visual-art programming sits with Artists Unlimited.
 
 **2. TERM & GRADUATION**
 2.1 This Agreement runs for a fixed term of one (1) year ("the Rotation Year"). There is no automatic renewal and no right to terminate early without cause.
@@ -16,7 +17,7 @@
 **3. THE ROTATION**
 3.1 The Artist shall make themselves reasonably available for the Shack calendar rotation at partnership venues, studio sessions for Shack media, and related promotional appearances.
 3.2 Confirmed engagements are capped at six (6) per calendar quarter unless more are agreed in writing.
-3.3 No slot is binding until an Engagement Order (Document 3) is signed.
+3.3 No slot is binding until an Engagement Order (LE_02) is signed.
 
 **4. THE COMPANY'S OBLIGATIONS**
 4.1 Book the rotation; produce each engagement to professional standard; promote the Artist through Shack media; account transparently as below.
@@ -46,7 +47,7 @@
 10.1 All accounts settle within 30 days. The Artist's self-promotion licence survives for materials already issued to them.
 
 **11. GENERAL**
-11.1 Clauses 9.1-9.8 of Document 1 apply as if repeated here.
+11.1 Clauses 9.1-9.9 of AU_01 apply as if repeated here.
 
 **SIGNED** for and on behalf of SHACK ENTERTAINMENT LIMITED by **BOLA KASSIM, Director** ………… Date …………
 **SIGNED by the ARTIST** ………… Date …………

@@ -1,6 +1,6 @@
-# DOCUMENT 4 — LIVE EXCHANGE FIRST CONTACT LETTER
+# LE_03 — LIVE EXCHANGE FIRST CONTACT LETTER
 
-**Subject: Invitation to The Live Exchange — Professional Springboard Roster (Ref: [ART-xxx])**
+**Subject: Invitation to The Live Exchange — Professional Springboard Roster (Ref: [LE-xxx])**
 
 Hi [Name],
 
@@ -18,7 +18,7 @@ The Live Exchange is not a hobbyist collective; it is a professional production 
 
 If you are looking for a casual slot, this is not it. If you are a disciplined professional seeking a serious launchpad, reply and we will send the Springboard Partnership Agreement and Media Release for your review.
 
-Your ID is **[ART-xxx]**.
+Your ID is **[LE-xxx]**.
 
 Regards, **Bola Kassim**, Director, Shack Entertainment Ltd.
 

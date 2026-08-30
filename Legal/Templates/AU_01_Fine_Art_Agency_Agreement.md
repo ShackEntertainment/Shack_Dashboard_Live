@@ -1,4 +1,4 @@
-# DOCUMENT 1 — ARTISTS UNLIMITED FINE ART AGENCY AGREEMENT
+# AU_01 — ARTISTS UNLIMITED FINE ART AGENCY AGREEMENT
 
 **THIS AGREEMENT** is made on [date]
 
@@ -9,6 +9,7 @@
 **1. APPOINTMENT**
 1.1 The Artist appoints the Company as its agent to place, exhibit, market and sell the Artist's works through the Company's stores, partner outlets, exhibitions and online channels ("the Channels").
 1.2 The appointment is **non-exclusive**. Nothing prevents the Artist from selling, consigning or licensing works directly or through third parties, and no commission is payable on any sale not secured by the Company.
+1.3 Gallery placements, exhibitions and art-related shows are programmed under the Artists Unlimited banner.
 
 **2. TERM**
 2.1 This Agreement runs for **three (3) years** from the date above and expires automatically on its third anniversary. There is **no automatic renewal or extension** of any kind.
@@ -52,6 +53,7 @@
 9.6 The Contracts (Rights of Third Parties) Act 1999 is excluded.
 9.7 Disputes go first to good-faith mediation; failing settlement within 30 days, to the exclusive jurisdiction of the courts of England and Wales. This Agreement is governed by English law.
 9.8 The Artist confirms having had the opportunity to take independent legal advice.
+9.9 Neither party is liable for failure or delay in performance (other than payment obligations) caused by events beyond its reasonable control, including fire, flood, strike, industrial action, war, government action or utility failure; the affected party shall give prompt notice and its obligation is suspended while the event continues; if the event continues beyond 60 days either party may terminate on written notice with accounts settled.
 
 **SIGNED** for and on behalf of SHACK ENTERTAINMENT LIMITED by **BOLA KASSIM, Director** ………… Date …………
 **SIGNED by the ARTIST** ………… Date …………

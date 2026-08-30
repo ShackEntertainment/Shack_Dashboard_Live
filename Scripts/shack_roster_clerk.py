@@ -133,7 +133,7 @@ async def ingest_all():
               'le_art': ws_by_part(le_wb, 'artist_talent'),
               'le_evt': ws_by_part(le_wb, 'events_master')}
     dirs = {'au': AU_DROP, 'le_art': LE_ART_DROP, 'le_evt': LE_EVT_DROP}
-    prefixes = {'au': '', 'le_art': 'ART-', 'le_evt': 'EVT-2026-'}
+    prefixes = {'au': 'ART-', 'le_art': 'LE-', 'le_evt': 'EVT-2026-'}
 
     added = []
     for drop_type in ('au', 'le_art', 'le_evt'):
