@@ -179,12 +179,20 @@ def query_database(question):
                     f"**TOTAL: £{total:,.2f}**")
 
         elif 'expense' in q or 'spend' in q:
-            cursor.execute("SELECT category, description, amount FROM finance_expenses LIMIT 10")
-            rows = cursor.fetchall()
+            csv_path = os.path.join(project_root, 'Data', 'expenses.csv')
+            rows = []
+            if os.path.exists(csv_path):
+                with open(csv_path, encoding='utf-8') as f:
+                    csv_lines = [x.rstrip() for x in f if x.strip()]
+                for x in csv_lines[1:][-3:]:
+                    parts = x.split(',')
+                    if len(parts) >= 5:
+                        rows.append((parts[5] if len(parts) > 5 else 'other',
+                                     parts[3], parts[4]))
             if rows:
                 out = "💸 **Recent Expenses:**\n\n"
-                for r in rows:
-                    out += f"• {r[0]}: {r[1]} — £{parse_currency(r[2]):,.2f}\n\n"
+                for cat, desc, amt in rows:
+                    out += f"• {cat}: {desc} — £{parse_currency(amt):,.2f}\n\n"
                 return out
             return "No expense data available yet."
 

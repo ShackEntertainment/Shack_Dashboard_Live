@@ -2,7 +2,8 @@
 SHACK ENTERTAINMENT — shack_roster_clerk.py
 [ROSTER] Watches roster_drops folders, extracts artist/event data,
 appends to Google Sheets (AU Artists, LE Artist_Talent, LE Events).
-AU IDs come from the sheet's own array formula (column A left blank).
+All IDs are minted by the clerk (ART-, LE-, EVT-2026-); writes are
+explicit A-column updates at the first empty row — no append_row.
 """
 import os
 import re
@@ -43,18 +44,18 @@ MODEL_COLS = {'au': 4, 'le_art': 6, 'le_evt': 8}
 
 PROMPTS = {
     'au': ('You are an agency clerk. From the document extract the artist. '
-           'Return ONLY one CSV line with exactly 4 fields: '
+           'Return ONLY one CSV line with exactly 4 fields separated by commas: '
            'Artist Name,Art Type/Discipline,Contact Email,Tier. '
            'Tier one of: Emerging, Established, Headliner. '
            'Inside a field use spaces, never commas.'),
     'le_art': ('You are an agency clerk. From the document extract the artist. '
-               'Return ONLY one CSV line with exactly 6 fields: '
+               'Return ONLY one CSV line with exactly 6 fields separated by commas: '
                'Artist Name,Discipline,Contact Email,Contact Phone,'
                'Fee_Type,Fee_Amount. Fee_Type one of: Fixed, '
                '% Split (70/30), Door Deal, Revenue Share. '
                'Inside a field use spaces, never commas.'),
     'le_evt': ('You are an agency clerk. From the document extract the event. '
-               'Return ONLY one CSV line with exactly 8 fields: '
+               'Return ONLY one CSV line with exactly 8 fields separated by commas: '
                'Event Name,Event Type,Venue Name,Venue Address,Event Date,'
                'Doors Open,Show Start,Capacity Total. Date YYYY-MM-DD, '
                'times HH:MM. Inside a field use spaces, never commas.')
@@ -79,10 +80,11 @@ def get_text_and_images(path):
             try:
                 doc = fitz.open(path)
                 pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2))
-                img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+                img = Image.frombytes('RGB', pix.width, pix.height, pix.samples)
                 img.thumbnail((1024, 1024))
                 buf = io.BytesIO()
-                img.save(buf, 'JPEG', quality=85)
+                im2 = img.convert('RGB')
+                im2.save(buf, 'JPEG', quality=85)
                 doc.close()
                 return '(PDF rendered)', [base64.b64encode(buf.getvalue()).decode()]
             except Exception:
@@ -107,7 +109,7 @@ async def extract(text, images, prompt):
 def build_row(drop_type, parts, new_id):
     if drop_type == 'au':
         name, disc, email, tier = parts
-        return (['', name, disc, email, 'Yes', tier, '', '',
+        return ([new_id, name, disc, email, 'Yes', tier, '', '',
                  'Active', '', '', ''], name)
     if drop_type == 'le_art':
         name, disc, email, phone, fee_type, fee_amount = parts
@@ -116,6 +118,9 @@ def build_row(drop_type, parts, new_id):
     name, etype, venue, addr, edate, doors, start, cap = parts
     return ([new_id, name, etype, venue, addr, edate, doors, start,
              cap, '', cap, 'Planning', 'Bola', '', ''], name)
+
+def first_empty_row(sheet):
+    return len(sheet.col_values(2)) + 1
 
 async def ingest_all():
     creds = Credentials.from_service_account_file(SA_FILE, scopes=SCOPES)
@@ -159,25 +164,24 @@ async def ingest_all():
                 parts = parts[:n - 1] + [', '.join(parts[n - 1:])]
             while len(parts) < n:
                 parts.append('')
-            new_id = ''
-            if drop_type != 'au':
-                max_n = 0
-                for val in sheet.col_values(1):
-                    m = re.search(r'(\d+)\s*$', str(val).strip())
-                    if m:
-                        max_n = max(max_n, int(m.group(1)))
-                for a in added:
-                    m = re.search(r'(\d+)$', a.split(':')[0])
-                    if m:
-                        max_n = max(max_n, int(m.group(1)))
-                new_id = '%s%03d' % (prefixes[drop_type], max_n + 1)
+            max_n = 0
+            for val in sheet.col_values(1):
+                m = re.search(r'(\d+)\s*$', str(val).strip())
+                if m:
+                    max_n = max(max_n, int(m.group(1)))
+            for a in added:
+                m = re.search(r'(\d+)$', a.split(':')[0])
+                if m:
+                    max_n = max(max_n, int(m.group(1)))
+            new_id = '%s%03d' % (prefixes[drop_type], max_n + 1)
             row, label = build_row(drop_type, parts, new_id)
             try:
-                sheet.append_row(row)
+                nxt = first_empty_row(sheet)
+                sheet.update('A%d' % nxt, [row], value_input_option='RAW')
             except Exception as e:
                 print('SKIP (sheet error):', fn, e)
                 continue
-            added.append('%s: %s' % (new_id or label, fn))
+            added.append('%s: %s' % (new_id, fn))
             done = os.path.join(drop_dir, 'processed')
             os.makedirs(done, exist_ok=True)
             shutil.move(p, os.path.join(done, fn))
