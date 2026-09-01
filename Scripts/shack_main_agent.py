@@ -5,7 +5,8 @@ import traceback
 import asyncio
 import tempfile
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import (Application, CommandHandler, MessageHandler,
+                          filters, ApplicationHandlerStop)
 from dotenv import load_dotenv
 import gspread
 import httpx
@@ -21,6 +22,8 @@ import shack_equipment_ingest as eqi
 import shack_expenses_ingest
 import shack_roster_clerk as src
 import shack_outline_dig as dig
+import shack_ops_guard as og
+import shack_subscribers as ssb
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
@@ -303,11 +306,7 @@ async def agent_query(update: Update, context, match: str, label: str,
         await send_voice(update, answer)
     except Exception as e:
         traceback.print_exc()
-        try:
-            await update.message.reply_text(
-                f"❌ {label} error: {type(e).__name__}: {e}")
-        except Exception:
-            pass
+        await og.fail(update, label, e, context.bot)
 
 async def cd(update: Update, context):
     await agent_query(update, context, 'creative director', 'Creative Director', '🎨')
@@ -336,10 +335,7 @@ async def finance_cmd(update: Update, context):
         await send_voice(update, answer)
     except Exception as e:
         traceback.print_exc()
-        try:
-            await update.message.reply_text(f"❌ Finance error: {e}")
-        except Exception:
-            pass
+        await og.fail(update, 'Finance', e, context.bot)
 
 async def fin(update: Update, context):
     """[FINWIRE] Live SQL data first, then Shack Finance interprets it."""
@@ -377,10 +373,7 @@ async def fin(update: Update, context):
         await send_voice(update, answer)
     except Exception as e:
         traceback.print_exc()
-        try:
-            await update.message.reply_text(f"❌ Finance Agent error: {e}")
-        except Exception:
-            pass
+        await og.fail(update, 'Finance Agent', e, context.bot)
 
 async def _fq_direct(update: Update, context, question: str):
     try:
@@ -391,10 +384,7 @@ async def _fq_direct(update: Update, context, question: str):
         await send_voice(update, answer)
     except Exception as e:
         traceback.print_exc()
-        try:
-            await update.message.reply_text(f"❌ Finance error: {e}")
-        except Exception:
-            pass
+        await og.fail(update, 'Finance', e, context.bot)
 
 async def f_events(update: Update, context):
     await _fq_direct(update, context, "What events do we have?")
@@ -445,7 +435,7 @@ async def log_cmd(update: Update, context):
         return
     except Exception as e:
         traceback.print_exc()
-        await update.message.reply_text(f"❌ Ledger error: {e}")
+        await og.fail(update, 'Ledger', e, context.bot)
         return
     await update.message.reply_text(out)
 
@@ -522,13 +512,24 @@ async def cal_cmd(update: Update, context):
                 'add <t> | <date> | <min> | today | week')
     except Exception as e:
         traceback.print_exc()
-        await update.message.reply_text(f"❌ Calendar error: {e}")
+        await og.fail(update, 'Calendar', e, context.bot)
 
 # ============================================================================
 # [MAILWIRE] bridge polling + Tier-3 approval commands
 # ============================================================================
 
 LAST_CHAT = os.path.join(project_root, 'configs', 'last_chat.txt')
+
+async def owner_gate(update: Update, context):
+    cid = str(update.effective_chat.id) if update.effective_chat else ''
+    if cid != og.OWNER:
+        try:
+            if update.message is not None:
+                await update.message.reply_text(
+                    "🔒 This bot is private to the Shack office.")
+        except Exception:
+            pass
+        raise ApplicationHandlerStop
 
 async def remember(update: Update, context):
     try:
@@ -546,7 +547,7 @@ def _last_chat():
 
 async def mail_tick(application):
     results = await asyncio.to_thread(mb.check_mail)
-    chat = _last_chat()
+    chat = og.OWNER
     if not chat or not results:
         return
     shown = 0
@@ -594,6 +595,9 @@ async def senddraft(update: Update, context):
     if len(parts) < 2 or not parts[1].strip():
         await update.message.reply_text("Usage: /senddraft <draft_id>")
         return
+    if str(update.effective_chat.id) != og.OWNER:
+        await update.message.reply_text("🔒 Approval commands are MD-only.")
+        return
     result = await asyncio.to_thread(mb.send_draft, parts[1].strip())
     await update.message.reply_text(result)
 
@@ -619,13 +623,7 @@ async def voice_intake(update: Update, context):
         await send_voice(update, si.spoken(res))
     except Exception as e:
         traceback.print_exc()
-        try:
-            await context.bot.edit_message_text(
-                chat_id=update.message.chat.id,
-                message_id=thinking.message_id,
-                text=f"❌ Intake error: {e}")
-        except Exception:
-            pass
+        await og.fail(update, 'Intake', e, context.bot)
 
 async def text_intake(update: Update, context):
     try:
@@ -640,10 +638,7 @@ async def text_intake(update: Update, context):
         await send_voice(update, si.spoken(res))
     except Exception as e:
         traceback.print_exc()
-        try:
-            await update.message.reply_text(f"❌ Intake error: {e}")
-        except Exception:
-            pass
+        await og.fail(update, 'Intake', e, context.bot)
 
 async def audio(update: Update, context):
     parts = _msg_text(update).split(' ', 1)
@@ -683,14 +678,28 @@ async def sales(update: Update, context):
         await update.message.reply_text(msg)
     except Exception as e:
         traceback.print_exc()
-        await update.message.reply_text("ERROR: " + str(e))
+        await og.fail(update, 'Sales', e, context.bot)
 
 async def status(update: Update, context):
     await update.message.reply_text("Bot running")
 
+async def subscribe(update: Update, context):
+    parts = _msg_text(update).split(' ', 1)
+    if len(parts) < 2 or not parts[1].strip():
+        await update.message.reply_text("Usage: /subscribe <email>")
+        return
+    sid, msg = ssb.add(parts[1].strip())
+    await update.message.reply_text(msg)
+    if sid:
+        await send_voice(update, msg)
+
+async def subscribers(update: Update, context):
+    await update.message.reply_text(f"📬 {ssb.count()} active subscriber(s).")
+
 if __name__ == '__main__':
     app = (Application.builder().token(TELEGRAM_TOKEN)
            .post_init(post_init).build())
+    app.add_handler(MessageHandler(filters.ALL, owner_gate), group=-2)
     app.add_handler(MessageHandler(filters.ALL, remember), group=-1)
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("sales", sales))
@@ -712,6 +721,8 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("audio", audio))
     app.add_handler(CommandHandler("drafts", drafts))
     app.add_handler(CommandHandler("senddraft", senddraft))
+    app.add_handler(CommandHandler("subscribe", subscribe))
+    app.add_handler(CommandHandler("subscribers", subscribers))
     for _row in AGENTS:
         app.add_handler(CommandHandler(_row[0], _make_agent(*_row[1:])))
 
