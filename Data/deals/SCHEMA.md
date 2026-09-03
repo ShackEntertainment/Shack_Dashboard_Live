@@ -1,0 +1,12 @@
+# DEAL CARD SCHEMA — v1
+- deal: unique code, format DEAL-<CLIENT>.
+- client: legal name.
+- summary: one sentence, plain language.
+- constraints: list; SHACK BRAND CARD and ethos lines always implied even if unstated.
+- stages: ordered list; each stage:
+  - stage: number.
+  - parallel: true (tasks fire together).
+  - needs: stage number whose outputs this stage consumes (omit for 1).
+  - gate: "bola" — nothing advances without /approve DEAL-<CLIENT>-S<n>.
+  - tasks: list of {agent (registry id), action (registry capability), params}.
+- status: current_stage + gates_passed — written only by the Conductor tool, never by agents.

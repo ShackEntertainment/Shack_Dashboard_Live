@@ -1,0 +1,12 @@
+{
+  "da":        {"name": "Design Agent",      "capabilities": ["render_poster", "stock_retrieval", "design_brief", "brand_lockup"], "tools": ["ShackStock", "ShackRender", "ShackAssets"], "outputs": "03_Drafts"},
+  "content":   {"name": "Content Studio",    "capabilities": ["post_pack", "social_copy", "scheduling_draft"], "tools": [], "outputs": "Social_Drafts"},
+  "comms":     {"name": "Comms",             "capabilities": ["subscriber_dispatch_draft", "announcement"], "tools": [], "outputs": "Mail_Drafts"},
+  "marketing": {"name": "Marketing Agent",   "capabilities": ["campaign_strategy", "exposure_map", "promo_plan"], "tools": [], "outputs": "03_Drafts"},
+  "snn":       {"name": "Shack News Editor", "capabilities": ["editorial", "preview_article", "coverage"], "tools": [], "outputs": "Mail_Drafts"},
+  "au":        {"name": "Artists Unlimited", "capabilities": ["artist_availability", "catalogue", "artist_profile"], "tools": [], "outputs": "03_Drafts"},
+  "le":        {"name": "Live Exchange",     "capabilities": ["venue_hold", "show_schedule", "event_logistics"], "tools": [], "outputs": "03_Drafts"},
+  "ra":        {"name": "Research Analyst",  "capabilities": ["background_research", "fact_check", "source_digest"], "tools": [], "outputs": "03_Drafts"},
+  "cos":       {"name": "Chief of Staff",    "capabilities": ["meeting_brief", "strategic_fit", "stage_monitor", "deal_review"], "tools": [], "outputs": "03_Drafts"},
+  "ryan":      {"name": "Finance (Ryan)",    "capabilities": ["invoice_pack", "margin_report", "sponsorship_terms", "statement_draft"], "tools": [], "outputs": "Statements"}
+}

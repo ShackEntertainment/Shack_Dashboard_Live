@@ -696,6 +696,22 @@ async def subscribe(update: Update, context):
 async def subscribers(update: Update, context):
     await update.message.reply_text(f"📬 {ssb.count()} active subscriber(s).")
 
+async def approve_cmd(update: Update, context):
+    parts = _msg_text(update).split()
+    if len(parts) < 2 or not parts[1].strip():
+        await update.message.reply_text("Usage: /approve <code>")
+        return
+    if str(update.effective_chat.id) != og.OWNER:
+        await update.message.reply_text("🔒 Approval commands are MD-only.")
+        return
+    code = parts[1].strip().upper()
+    adir = os.path.join(project_root, 'Data', 'approvals')
+    os.makedirs(adir, exist_ok=True)
+    with open(os.path.join(adir, f"approved_{code}.token"), 'w') as f:
+        f.write('approved')
+    await update.message.reply_text(
+        f"✅ Approved {code} — the asset moves on DA's next tool call.")
+
 if __name__ == '__main__':
     app = (Application.builder().token(TELEGRAM_TOKEN)
            .post_init(post_init).build())
@@ -723,6 +739,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("senddraft", senddraft))
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("subscribers", subscribers))
+    app.add_handler(CommandHandler("approve", approve_cmd))
     for _row in AGENTS:
         app.add_handler(CommandHandler(_row[0], _make_agent(*_row[1:])))
 

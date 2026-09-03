@@ -1,0 +1,118 @@
+{
+  "deal": "DEAL-SPIRITCO",
+  "client": "SpiritCo Ltd",
+  "summary": "Sponsorship: 4 shows + 2 art events, co-branded, full ecosystem exposure",
+  "constraints": [
+    "SHACK BRAND CARD",
+    "no fee figures in public assets",
+    "sponsor mark secondary to Shack marks",
+    "ethos lines never contradicted"
+  ],
+  "stages": [
+    {
+      "stage": 1,
+      "parallel": true,
+      "gate": "bola",
+      "tasks": [
+        {
+          "agent": "ryan",
+          "action": "sponsorship_terms",
+          "params": {
+            "shows": 4,
+            "art_events": 2
+          }
+        },
+        {
+          "agent": "au",
+          "action": "artist_availability",
+          "params": {
+            "shows": 4
+          }
+        },
+        {
+          "agent": "le",
+          "action": "venue_hold",
+          "params": {
+            "shows": 4
+          }
+        }
+      ]
+    },
+    {
+      "stage": 2,
+      "parallel": true,
+      "gate": "bola",
+      "needs": 1,
+      "tasks": [
+        {
+          "agent": "da",
+          "action": "brand_lockup",
+          "params": {
+            "sponsor": "SpiritCo",
+            "assets": [
+              "posters_x4",
+              "art_collateral",
+              "social_suite"
+            ]
+          }
+        },
+        {
+          "agent": "marketing",
+          "action": "exposure_map",
+          "params": {
+            "channels": "all"
+          }
+        }
+      ]
+    },
+    {
+      "stage": 3,
+      "parallel": true,
+      "gate": "bola",
+      "needs": 2,
+      "tasks": [
+        {
+          "agent": "content",
+          "action": "post_pack",
+          "params": {}
+        },
+        {
+          "agent": "comms",
+          "action": "subscriber_dispatch_draft",
+          "params": {}
+        },
+        {
+          "agent": "snn",
+          "action": "coverage",
+          "params": {
+            "angle": "partnership"
+          }
+        }
+      ]
+    },
+    {
+      "stage": 4,
+      "parallel": true,
+      "gate": "bola",
+      "needs": 3,
+      "tasks": [
+        {
+          "agent": "cos",
+          "action": "deal_review",
+          "params": {}
+        },
+        {
+          "agent": "ryan",
+          "action": "invoice_pack",
+          "params": {}
+        }
+      ]
+    }
+  ],
+  "status": {
+    "current_stage": 1,
+    "gates_passed": [
+      1
+    ]
+  }
+}
