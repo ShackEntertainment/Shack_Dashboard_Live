@@ -71,15 +71,16 @@ except Exception as e:
     bad('expenses.csv', str(e)[:120])
 
 # 7 — sites (status recorded; dark is the current truth)
-for url in ('https://shackentertainment.co.uk', 'https://theliveexchange.com'):
+for url in ('https://shackentertainment.co.uk', 'https://theliveexchange.co.uk'):
     try:
-        r = httpx.get(url, timeout=15, follow_redirects=True)
+        r = httpx.get(url, timeout=15, follow_redirects=True,
+                  headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ShackSweep/1.0'})
         ok(url.split('//')[1], f"HTTP {r.status_code}")
     except Exception as e:
         bad(url.split('//')[1], str(e)[:120])
 
 # 8 — subscriber path
-lines.append('🔒 Subscriber path — PAUSED pending rebuild (Door 4)')
+lines.append('🟢 Subscriber path — OPEN inbound (intake only); outbound dispatch frozen')
 
 report = '🩺 OPS SWEEP — canary\n' + '\n'.join(lines)
 print(report)

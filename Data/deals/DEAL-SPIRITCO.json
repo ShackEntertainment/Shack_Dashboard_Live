@@ -6,7 +6,8 @@
     "SHACK BRAND CARD",
     "no fee figures in public assets",
     "sponsor mark secondary to Shack marks",
-    "ethos lines never contradicted"
+    "ethos lines never contradicted",
+    "REVENUE DOCTRINE v1 applies"
   ],
   "stages": [
     {
@@ -110,9 +111,12 @@
     }
   ],
   "status": {
-    "current_stage": 1,
+    "current_stage": 4,
     "gates_passed": [
-      1
+      1,
+      2,
+      3,
+      4
     ]
   }
 }
