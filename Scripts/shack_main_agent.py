@@ -608,6 +608,8 @@ async def senddraft(update: Update, context):
 # ============================================================================
 
 async def voice_intake(update: Update, context):
+    if str(update.effective_chat.id) == og.OWNER:
+        return
     thinking = await update.message.reply_text("🎙️ Transcribing intake...")
     try:
         voice = update.message.voice
@@ -712,7 +714,150 @@ async def approve_cmd(update: Update, context):
     with open(os.path.join(adir, f"approved_{code}.token"), 'w') as f:
         f.write('approved')
     await update.message.reply_text(
-        f"✅ Approved {code} — the asset moves on DA's next tool call.")
+        f"✅ Approved {code} — the gate releases on the next tool call.")
+
+import edge_tts
+VOICE_ID = 'en-GB-SoniaNeural'
+
+def _sayable(t):
+    import re
+    t = re.sub(r'```.*?```', ' ', t, flags=re.S)
+    for a, b in [('**', ''), ('*', ''), ('`', ''), ('#', ''), ('[', ''), (']', ''),
+                 ('\\', ' '), ('->', ' to '), ('→', ' to '), ('✅', ' done. '),
+                 ('🟡', ' pending. '), ('🔴', ' blocked. '), ('🟢', ' '), ('📊', ' '),
+                 ('🎯', ' '), ('🔒', ' '), ('📝', ' '), ('💰', ' '), ('🎼', ' '),
+                 ('|', ', '), ('---', ' '), ('.md', ' '), ('_', ' '), ('&', ' and ')]:
+        t = t.replace(a, b)
+    SAY_NAMES = {'cos': 'Chief of Staff', 'le': 'The Live Exchange',
+                 'au': 'Artists Unlimited', 'snn': 'Shack News',
+                 'da': 'Design Agent', 'ra': 'Research Analyst',
+                 'film': 'Film Director', 'comms': 'Communications'}
+    for k, v in SAY_NAMES.items():
+        t = re.sub(r'\b' + re.escape(k) + r'\b', v, t, flags=re.I)
+    t = re.sub(r'^\s*-\s+', '', t, flags=re.M)
+    t = re.sub(r'\n+', '. ', t)
+    t = re.sub(r'\s+', ' ', t)
+    return t.strip()
+
+
+async def _tts_send(text, update):
+    import tempfile
+    fn = os.path.join(tempfile.gettempdir(), 'shack_voice.mp3')
+    await edge_tts.Communicate(_sayable(text)[:6000], VOICE_ID).save(fn)
+    with open(fn, 'rb') as f:
+        await update.message.reply_audio(audio=f, title='Shack voice note')
+
+async def read_cmd(update, context):
+    if str(update.effective_chat.id) != og.OWNER:
+        await update.message.reply_text("🔒 Read is MD-only.")
+        return
+    parts = update.message.text.split()
+    out_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Data', 'deals', 'outputs')
+    d = os.path.join(out_base, parts[1]) if len(parts) > 1 and os.path.isdir(os.path.join(out_base, parts[1])) else None
+    if d is None:
+        subs = [os.path.join(out_base, x) for x in os.listdir(out_base) if os.path.isdir(os.path.join(out_base, x))]
+        d = max(subs, key=os.path.getmtime) if subs else out_base
+    cands = [os.path.join(d, x) for x in os.listdir(d) if x.endswith('_reply.md')]
+    if not cands:
+        await update.message.reply_text('No replies to read.')
+        return
+    fn = max(cands, key=os.path.getmtime)
+    await update.message.reply_text('🔊 Reading: ' + os.path.basename(fn))
+    await _tts_send(open(fn, encoding='utf-8').read(), update)
+
+
+
+import tempfile, json, re
+from faster_whisper import WhisperModel
+from telegram import Update
+from telegram.ext import ContextTypes, MessageHandler, filters
+
+try:
+    WHISPER_MODEL = WhisperModel("base", device="cpu", compute_type="int8")
+except Exception:
+    WHISPER_MODEL = None
+
+VOICE_DEALS = {"showcase": "DEAL-SHOWCASE01", "spirit": "DEAL-SPIRITCO", "paul": "DEAL-PND"}
+NUM_MAP = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5"}
+
+async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_chat.id) != og.OWNER:
+        return
+    if WHISPER_MODEL is None:
+        await update.message.reply_text("🔴 Whisper model failed to load.")
+        return
+
+    voice_file = await update.message.voice.get_file()
+    with tempfile.NamedTemporaryFile(suffix='.ogg', delete=False) as tf:
+        await voice_file.download_to_drive(tf.name)
+        audio_path = tf.name
+
+    try:
+        segments, _ = WHISPER_MODEL.transcribe(audio_path, beam_size=5)
+        text = " ".join([seg.text for seg in segments]).strip().lower()
+    except Exception as e:
+        text = ""
+        await update.message.reply_text(f"🔴 Audio decode error (needs ffmpeg?): {e}")
+    finally:
+        os.unlink(audio_path)
+
+    await update.message.reply_text(f"👂 Heard: '{text}'")
+
+    action = "approve" if "approve" in text else "runstage" if "run stage" in text or "runstage" in text else "read" if "read" in text else None
+    if not action:
+        await update.message.reply_text("No command recognized. Say approve, run stage, or read.")
+        return
+
+    deal_code = next((v for k, v in VOICE_DEALS.items() if k in text), None)
+    if not deal_code:
+        await update.message.reply_text(f"Command '{action}' recognized, but no deal name heard.")
+        return
+
+    if action == "approve":
+        card_p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Data', 'deals', deal_code + '.json')
+        if os.path.exists(card_p):
+            with open(card_p, 'r') as f: card = json.load(f)
+            nxt = card['status']['current_stage'] + 1
+            tok = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Data', 'approvals', f'approved_{deal_code}-S{nxt}.token')
+            open(tok, 'w').write('voice')
+            await update.message.reply_text(f"🗣️ Token released: {deal_code}-S{nxt} approved.")
+        else:
+            await update.message.reply_text(f"Deal card {deal_code} not found.")
+    else:
+        context.args = [deal_code]
+        if action == "read": await read_cmd(update, context)
+        elif action == "runstage": await runstage_cmd(update, context)
+
+async def owner_natural(update, context):
+    if str(update.effective_chat.id) != og.OWNER:
+        return
+    text = (update.message.text or '').strip().lower()
+    if not text:
+        return
+    if 'approve' in text: action = 'approve'
+    elif 'run stage' in text or 'runstage' in text: action = 'runstage'
+    elif text.startswith('read'): action = 'read'
+    elif text.startswith('status'): action = 'status'
+    else: return
+    deal_code = next((v for k, v in VOICE_DEALS.items() if k in text), None)
+    if action != 'status' and not deal_code:
+        await update.message.reply_text(f"Heard '{action}' but no deal name (showcase / spirit).")
+        return
+    await update.message.reply_text(f'🗣️ Heard → /{action} ' + (deal_code or ''))
+    context.args = [deal_code] if deal_code else []
+    if action == 'approve':
+        card_p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Data', 'deals', deal_code + '.json')
+        if os.path.exists(card_p):
+            import json as _json
+            with open(card_p, encoding='utf-8') as f: card = _json.load(f)
+            nxt = card['status']['current_stage'] + 1
+            tok = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Data', 'approvals', f'approved_{deal_code}-S{nxt}.token')
+            with open(tok, 'w') as f: f.write('natural')
+            await update.message.reply_text(f'🗣️ Token released: {deal_code}-S{nxt} approved.')
+    elif action == 'read': await read_cmd(update, context)
+    elif action == 'runstage': await runstage_cmd(update, context)
+    elif action == 'status': await status(update, context)
+
 
 async def runstage_cmd(update: Update, context):
     if str(update.effective_chat.id) != og.OWNER:
@@ -723,6 +868,7 @@ async def runstage_cmd(update: Update, context):
     await update.message.reply_text(f"🎼 Firing current stage of {code} — replies will follow.")
     summary = await asyncio.to_thread(rsg.run, code)
     await update.message.reply_text(summary)
+    await _tts_send(summary, update)
 
 if __name__ == '__main__':
     app = (Application.builder().token(TELEGRAM_TOKEN)
@@ -753,6 +899,9 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("subscribers", subscribers))
     app.add_handler(CommandHandler("approve", approve_cmd))
     app.add_handler(CommandHandler("runstage", runstage_cmd))
+    app.add_handler(MessageHandler(filters.VOICE, handle_voice))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, owner_natural))
+    app.add_handler(CommandHandler("read", read_cmd))
     for _row in AGENTS:
         app.add_handler(CommandHandler(_row[0], _make_agent(*_row[1:])))
 

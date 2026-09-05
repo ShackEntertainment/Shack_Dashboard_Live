@@ -1,17 +1,17 @@
 """
 SHACK ENTERTAINMENT — shack_conductor_mcp.py
-Conductor v1: reads Deal Cards, packs stages into per-agent instructions,
-advances gates only on Bola's token. Never fires agents itself (v1).
+Conductor v2: reads Deal Cards, packs stages into per-agent instructions,
+advances gates on approval tokens. Per-deal packs folders.
 """
-import os, json
+import os, re, json
+from datetime import date
 from mcp.server.fastmcp import FastMCP
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 DEALS = os.path.join(project_root, 'Data', 'deals')
-APDIR = os.path.join(project_root, 'Data', 'approvals')
 PACKS = os.path.join(DEALS, 'packs')
-os.makedirs(PACKS, exist_ok=True)
+APDIR = os.path.join(project_root, 'Data', 'approvals')
 
 mcp = FastMCP('ShackConductor')
 
@@ -22,64 +22,74 @@ def _card(code):
     with open(p, encoding='utf-8') as f:
         return json.load(f), p
 
-@mcp.tool()
-def deal_status(code: str) -> str:
-    """Current stage, gates passed, and next stage tasks of a deal."""
-    c, _ = _card(code)
-    if not c:
-        return f"No deal card {code}."
-    s = c['status']
-    nxt = s['current_stage'] + 1
-    stages = {st['stage']: st for st in c['stages']}
-    tasks = stages.get(nxt, {}).get('tasks', [])
-    return (f"{code} | stage {s['current_stage']} done | gates {s['gates_passed']} | "
-            f"next stage {nxt}: " + '; '.join(f"{t['agent']}:{t['action']}" for t in tasks))
+def _clean(code):
+    m = re.match(r'^(DEAL-[A-Z0-9]+)(?:-S\d+)?$', code.strip().upper())
+    return m.group(1) if m else code.strip()
+
+def _packbody(card, nxt, t):
+    return '\n'.join([
+        f"# {card['deal']} — Stage {nxt} task for {t['agent'].upper()}",
+        f"Action: {t['action']}",
+        f"Params: {json.dumps(t['params'])}",
+        "Deal constraints:",
+        *['- ' + x for x in card['constraints']],
+        f"Client: {card['client']} — {card['summary']}",
+        "Date: " + date.today().isoformat(),
+        "Save your output as a draft in your outputs folder.",
+        "End with the question it answers and the approval it awaits.",
+        "Report only what you produce. No moves, no publishing.",
+    ])
 
 @mcp.tool()
 def stage_pack(code: str) -> str:
-    """Write per-agent instruction files for the next stage; returns paths."""
-    c, _ = _card(code)
-    if not c:
-        return f"No deal card {code}."
-    nxt = c['status']['current_stage'] + 1
-    st = next((s for s in c['stages'] if s['stage'] == nxt), None)
-    if not st:
-        return 'All stages packed — deal complete pending review.'
-    out = []
-    for t in st['tasks']:
-        fn = os.path.join(PACKS, f"{code}_S{nxt}_{t['agent']}.md")
-        body = '\n'.join([
-            f"# {code} — Stage {nxt} task for {t['agent'].upper()}",
-            f"Action: {t['action']}",
-            f"Params: {json.dumps(t['params'])}",
-            "Deal constraints:",
-            *['- ' + x for x in c['constraints']],
-            f"Client: {c['client']} — {c['summary']}",
-            "Save your output as a draft in your outputs folder.",
-            "End with the question it answers and the approval it awaits.",
-            "Report only what you produce. No moves, no publishing.",
-        ])
-        with open(fn, 'w', encoding='utf-8') as f:
-            f.write(body)
-        out.append(os.path.basename(fn))
-    return 'Packed stage ' + str(nxt) + ': ' + ', '.join(out)
+    """Build pack files for the deal's next stage; returns their paths."""
+    code = _clean(code)
+    card, _ = _card(code)
+    if card is None:
+        return f'No deal card {code}.json'
+    nxt = card['status']['current_stage'] + 1
+    stage = next((s for s in card['stages'] if s['stage'] == nxt), None)
+    if stage is None:
+        return f'{code}: no stage {nxt} — card complete or malformed.'
+    sub = os.path.join(PACKS, code)
+    os.makedirs(sub, exist_ok=True)
+    paths = []
+    for t in stage['tasks']:
+        fn = os.path.join(sub, f"{code}_S{nxt}_{t['agent']}.md")
+        if not os.path.exists(fn):
+            with open(fn, 'w', encoding='utf-8') as f:
+                f.write(_packbody(card, nxt, t))
+        paths.append(fn)
+    return f"Stage {nxt} packs ready:\n" + '\n'.join(paths)
 
 @mcp.tool()
 def advance_gate(code: str) -> str:
-    """Advance the deal one stage. Requires Bola's /approve token for the stage."""
-    c, p = _card(code)
-    if not c:
-        return f"No deal card {code}."
-    nxt = c['status']['current_stage'] + 1
-    tok = os.path.join(APDIR, f"approved_{code}-S{nxt}.token")
+    """Consume the approval token and pass the next gate."""
+    code = _clean(code)
+    card, p = _card(code)
+    if card is None:
+        return f'No deal card {code}.json'
+    nxt = card['status']['current_stage'] + 1
+    tok = os.path.join(APDIR, f'approved_{code}-S{nxt}.token')
     if not os.path.exists(tok):
-        return f"PENDING — no token for {code}-S{nxt}. Reply /approve {code}-S{nxt} to release."
-    c['status']['gates_passed'].append(nxt)
-    c['status']['current_stage'] = nxt
-    with open(p, 'w', encoding='utf-8') as f:
-        json.dump(c, f, indent=2)
+        return f'PENDING — no approval token for {code}-S{nxt}. Reply /approve {code}-S{nxt} to release.'
     os.remove(tok)
-    return f"GATE S{nxt} PASSED — {code} now at stage {nxt}. Pack the next stage when ready."
+    card['status']['gates_passed'].append(nxt)
+    card['status']['current_stage'] = nxt
+    with open(p, 'w', encoding='utf-8') as f:
+        json.dump(card, f, indent=2)
+    return f'GATE S{nxt} PASSED — {code} now at stage {nxt}. Pack the next stage when ready.'
+
+@mcp.tool()
+def card_status(code: str) -> str:
+    """Report a deal card's stage state."""
+    code = _clean(code)
+    card, _ = _card(code)
+    if card is None:
+        return f'No deal card {code}.json'
+    st = card['status']
+    return (f"{code}: stage {st['current_stage']}, gates {st['gates_passed']}, "
+            f"next S{st['current_stage'] + 1}.")
 
 if __name__ == '__main__':
     mcp.run()

@@ -12,3 +12,4 @@
 6. No free ride, no extraction.
 7. Every contract states the separation explicitly.
 8. Marketplace and payment fees are recouped from gross before the 70/30 split on online sales.
+9. Artist-run outlets report monthly: order export or read-only shop access. The 30% is only as auditable as the data behind it.
